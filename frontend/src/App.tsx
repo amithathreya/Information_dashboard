@@ -1,8 +1,7 @@
-  
-function App() {
+  function App() {
   return (
-    <div className="App">
-      Hello world!
+    <div className="flex justify-center">
+      <h1 className="text-4xl font-bold ">Hello world!</h1>
     </div>
   )
 }
