@@ -1,3 +1,4 @@
+// src/StudentLogin.jsx
 import React, { useState } from "react";
 
 function StudentLogin() {
@@ -6,6 +7,7 @@ function StudentLogin() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // ⚠️ TODO: Replace alert with actual authentication and navigation logic
     alert(`Welcome ${name}! ID ${studentId} Verified`);
     console.log("Student Name:", name);
     console.log("Student ID:", studentId);
@@ -13,16 +15,12 @@ function StudentLogin() {
 
   return (
     <div>
-      {/* Header at the top */}
       <header style={styles.header}>
         <h1>Student Portal</h1>
       </header>
-
-      {/* Container for form */}
       <div style={styles.container}>
         <form onSubmit={handleSubmit} style={styles.form}>
           <h2 style={styles.title}>Student Login</h2>
-
           <input
             type="text"
             placeholder="Enter your name"
@@ -31,7 +29,6 @@ function StudentLogin() {
             style={styles.input}
             required
           />
-
           <input
             type="text"
             placeholder="Enter your student ID"
@@ -40,7 +37,6 @@ function StudentLogin() {
             style={styles.input}
             required
           />
-
           <button type="submit" style={styles.button}>
             Login
           </button>
