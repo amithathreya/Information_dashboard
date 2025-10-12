@@ -10,14 +10,21 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-export function SectionCards() {
+interface SectionCardsProps {
+  name: string;
+  usn: string;
+  department: string;
+  academicYear: string;
+}
+
+export function SectionCards({ name, usn, department, academicYear }: SectionCardsProps) {
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card className="@container/card">
         <CardHeader>
           <CardDescription> Student Name </CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            Amith Athreya H
+            {name}
           </CardTitle>
           <CardAction>
           </CardAction>
@@ -29,7 +36,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Current Semester</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            5
+            {academicYear}
           </CardTitle>
           <CardAction>
             
@@ -38,7 +45,7 @@ export function SectionCards() {
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
 
             <div className="line-clamp-1 flex gap-2 font-medium">
-              III year
+              {academicYear}
             </div>
         </CardFooter>
       </Card>
@@ -67,7 +74,7 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">
-            Computer Science and Engineering
+            {department}
           </CardTitle>
         </CardFooter>
       </Card>

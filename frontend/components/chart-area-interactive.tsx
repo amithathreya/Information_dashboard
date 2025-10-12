@@ -53,12 +53,21 @@ const chartConfig= {
 } satisfies ChartConfig
 
 
-export function ChartAreaInteractive() {
 
+interface ChartAreaInteractiveProps {
+  name: string;
+  usn: string;
+  department: string;
+  academicYear: string;
+}
+
+export function ChartAreaInteractive({ name, usn, department, academicYear }: ChartAreaInteractiveProps) {
+  // You can use these props as needed in your chart or header
   return (
     <Card className="@container/card max-w-lg mx-auto p-4">
       <CardHeader className="py-2 px-2">
         <CardTitle className="text-base">Attendence Report</CardTitle>
+        {/* Example usage: <div>{name} ({usn}) - {department}, {academicYear}</div> */}
       </CardHeader>
       <ChartContainer config={chartConfig} className="min-h-[100px] w-full">
         <BarChart accessibilityLayer data={chartData} width={420} height={140}>
@@ -75,7 +84,5 @@ export function ChartAreaInteractive() {
         </BarChart>
       </ChartContainer>
     </Card>
-    
-    
   )
 }

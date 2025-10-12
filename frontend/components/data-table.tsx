@@ -54,7 +54,15 @@ const invoices = [
   },
 ]
 
-export function DataTable() {
+interface DataTableProps {
+  name: string;
+  usn: string;
+  department: string;
+  academicYear: string;
+}
+
+export function DataTable({ name, usn, department, academicYear }: DataTableProps) {
+  // You can use these props as needed in your table or header
   return (
     <Table>
       <TableCaption>A list of your registered courses</TableCaption>

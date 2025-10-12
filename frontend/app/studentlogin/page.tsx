@@ -14,24 +14,45 @@ interface StudentLoginProps {
 function StudentLogin({ onAdminClick }: StudentLoginProps) {
   const [USN, setUSN] = useState("");
   const [password, setPassword] = useState("");
-    const router = useRouter();
+  const [isRegister, setIsRegister] = useState(false);
+  // Removed name, department, academicYear fields
+  const router = useRouter();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-  const response = await fetch(`${API_URL}/users/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ USN, password }),
-      });
-      const data = await response.json();
-      if (response.ok && data.token) {
-        localStorage.setItem('token', data.token);
-        // alert(`Welcome ${USN}! Login successful`);
-        router.push('/dashboard');
+      if (isRegister) {
+        // Registration mode (USN and password only)
+        const response = await fetch(`${API_URL}/users/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            USN,
+            password,
+          }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+          alert("Registration successful! Please login.");
+          setIsRegister(false);
+        } else {
+          alert(data.message || "Registration failed");
+        }
       } else {
-        alert(data.message);
+        // Login mode
+        const response = await fetch(`${API_URL}/users/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ USN, password }),
+        });
+        const data = await response.json();
+        if (response.ok && data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('usn', USN);
+          router.push('/dashboard');
+        } else {
+          alert(data.message);
+        }
       }
     } catch (error) {
       alert("Error connecting to server.");
@@ -75,14 +96,25 @@ function StudentLogin({ onAdminClick }: StudentLoginProps) {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {/* No extra fields for registration */}
             <Button
               className="w-full p-2 py-5 bg-green-600 text-white rounded-md cursor-pointer text-lg hover:bg-green-900 transition-colors duration-300"
               size="lg"
               type="submit"
             >
-              Login
+              {isRegister ? "Register" : "Login"}
             </Button>
           </form>
+          <div className="mt-4 text-center">
+            <Button
+              type="button"
+              variant="link"
+              className="text-white underline"
+              onClick={() => setIsRegister((prev) => !prev)}
+            >
+              {isRegister ? "Already have an account? Login" : "Don't have an account? Register"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
