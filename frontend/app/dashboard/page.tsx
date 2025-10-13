@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 
+
 export default function Page() {
   const [studentInfo, setStudentInfo] = useState({
     name: "",
@@ -16,6 +17,9 @@ export default function Page() {
     department: "",
     academicYear: "",
   });
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [academicData, setAcademicData] = useState<any>(null);
+  const [gradesData, setGradesData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStudentInfo = async () => {
@@ -26,14 +30,12 @@ export default function Page() {
         const res = await fetch(`http://localhost:8080/users/getinfo/${usn}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log("Fetch status:", res.status);
         let data = null;
         try {
           data = await res.json();
         } catch (err) {
           console.error("Error parsing JSON:", err);
         }
-        console.log("Student info raw response:", data);
         if (res.ok && data) {
           setStudentInfo({
             name: data.Name,
@@ -47,6 +49,57 @@ export default function Page() {
       }
     };
     fetchStudentInfo();
+
+    // Fetch attendance data
+    const fetchAttendance = async () => {
+      const usn = localStorage.getItem("usn");
+      if (!usn) return;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`http://localhost:8080/users/getattendance/${usn}`,
+          token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+        );
+        const data = await res.json();
+        setAttendanceData(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setAttendanceData([]);
+      }
+    };
+    fetchAttendance();
+
+    // Fetch academic data
+    const fetchAcademic = async () => {
+      const usn = localStorage.getItem("usn");
+      if (!usn) return;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`http://localhost:8080/users/getacademic/${usn}`,
+          token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+        );
+        const data = await res.json();
+        setAcademicData(data);
+      } catch (e) {
+        setAcademicData(null);
+      }
+    };
+    fetchAcademic();
+
+    // Fetch grades data
+    const fetchGrades = async () => {
+      const usn = localStorage.getItem("usn");
+      if (!usn) return;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`http://localhost:8080/users/getgrades/${usn}`,
+          token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+        );
+        const data = await res.json();
+        setGradesData(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setGradesData([]);
+      }
+    };
+    fetchGrades();
   }, []);
 
   return (
@@ -69,6 +122,7 @@ export default function Page() {
                 usn={studentInfo.usn}
                 department={studentInfo.department}
                 academicYear={studentInfo.academicYear}
+                academicData={academicData}
               />
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive
@@ -76,6 +130,7 @@ export default function Page() {
                   usn={studentInfo.usn}
                   department={studentInfo.department}
                   academicYear={studentInfo.academicYear}
+                  attendanceData={attendanceData}
                 />
               </div>
               <Card className="m-4">
@@ -88,6 +143,7 @@ export default function Page() {
                     usn={studentInfo.usn}
                     department={studentInfo.department}
                     academicYear={studentInfo.academicYear}
+                    gradesData={gradesData}
                   />
                 </CardContent>
               </Card>

@@ -59,37 +59,37 @@ interface DataTableProps {
   usn: string;
   department: string;
   academicYear: string;
+  gradesData?: any[];
 }
 
-export function DataTable({ name, usn, department, academicYear }: DataTableProps) {
-  // You can use these props as needed in your table or header
+
+export function DataTable(props: DataTableProps) {
+  const { name, usn, department, academicYear, gradesData = [] } = props;
+  // Debug: show raw gradesData for troubleshooting
   return (
-    <Table>
-      <TableCaption>A list of your registered courses</TableCaption>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px]">Course</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Instructor</TableHead>
-          <TableHead className="text-right">Credits</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {invoices.map((invoice) => (
-          <TableRow key={invoice.invoice}>
-            <TableCell className="font-medium">{invoice.invoice}</TableCell>
-            <TableCell>{invoice.paymentStatus}</TableCell>
-            <TableCell>{invoice.paymentMethod}</TableCell>
-            <TableCell className="text-right">{invoice.totalAmount}</TableCell>
+    <>
+      
+      <Table>
+        <TableCaption>A list of your registered courses</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Course Code</TableHead>
+            <TableHead>Course Name</TableHead>
+            <TableHead>Letter Grade</TableHead>
+            <TableHead className="text-right">Grade Point</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-      <TableFooter>
-        <TableRow>
-          <TableCell colSpan={3}>Total</TableCell>
-          <TableCell className="text-right">$2,500.00</TableCell>
-        </TableRow>
-      </TableFooter>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {gradesData.map((row, idx) => (
+            <TableRow key={row.Course_Code || idx}>
+              <TableCell className="font-medium">{row.Course_Code}</TableCell>
+              <TableCell>{row.Course_Name}</TableCell>
+              <TableCell>{row.LetterGrade}</TableCell>
+              <TableCell className="text-right">{row.GradePoint}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </>
   )
 }

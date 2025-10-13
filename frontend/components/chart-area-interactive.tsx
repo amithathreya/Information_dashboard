@@ -21,68 +21,66 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group"
 
-export const description = "An interactive area chart"
-
-const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
-]
-
-
-const chartConfig= {
+const chartConfig: ChartConfig = {
   desktop: {
     label: "Desktop",
     color: "#2563eb",
   },
-} satisfies ChartConfig
-
-
+};
 
 interface ChartAreaInteractiveProps {
   name: string;
   usn: string;
   department: string;
   academicYear: string;
+  attendanceData?: any[];
 }
 
-export function ChartAreaInteractive({ name, usn, department, academicYear }: ChartAreaInteractiveProps) {
-  // You can use these props as needed in your chart or header
+export function ChartAreaInteractive(props: ChartAreaInteractiveProps) {
+  const { name, usn, department, academicYear, attendanceData = [] } = props;
+  // Debug: log the attendanceData to check its structure
+  // Debug logging removed
+
+  // Map attendanceData to extract Course_Name and AttendancePct for the chart
+  const barChartData = Array.isArray(attendanceData)
+    ? attendanceData
+        .filter((item: any) => item && typeof item.Course_Name === 'string' && typeof item.AttendancePct === 'number')
+        .map((item: any) => ({
+          course: item.Course_Name,
+          attendance: item.AttendancePct,
+        }))
+    : [];
+
+  const isEmpty = !barChartData.length;
+
   return (
-    <Card className="@container/card max-w-lg mx-auto p-4">
+  <Card className="@container/card max-w-2xl mx-auto p-4">
       <CardHeader className="py-2 px-2">
-        <CardTitle className="text-base">Attendence Report</CardTitle>
-        {/* Example usage: <div>{name} ({usn}) - {department}, {academicYear}</div> */}
+        <CardTitle className="text-base">Attendance Report</CardTitle>
       </CardHeader>
       <ChartContainer config={chartConfig} className="min-h-[100px] w-full">
-        <BarChart accessibilityLayer data={chartData} width={420} height={140}>
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="month"
-            tickLine={false}
-            tickMargin={6}
-            axisLine={false}
-            tickFormatter={(value) => value.slice(0, 3)}
-          />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} barSize={40} />
-        </BarChart>
+        {isEmpty ? (
+          <div className="text-center py-8 text-muted-foreground">No attendance data available.</div>
+        ) : (
+          <BarChart accessibilityLayer data={barChartData} width={540} height={140}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="course"
+              tickLine={false}
+              tickMargin={12}
+              axisLine={false}
+              interval={0}
+              angle={-20}
+              textAnchor="end"
+              height={60}
+              tick={{ fontSize: 12, fill: '#333' }}
+            />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="attendance" fill="var(--color-desktop)" radius={4} barSize={40} />
+          </BarChart>
+        )}
       </ChartContainer>
     </Card>
-  )
+  );
 }
