@@ -54,7 +54,7 @@ export function SectionCards({ name, usn, department, academicYear, academicData
         </CardFooter>
       </Card>
       <Card className="@container/card">
-        <CardHeader>
+        <CardHeader>    
           <CardDescription>Previous Semester GPA</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {previousSemesterGPA}
