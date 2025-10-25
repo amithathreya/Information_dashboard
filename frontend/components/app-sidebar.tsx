@@ -35,13 +35,13 @@ import {
 
 const data = {
   user: {
-    name: "shadcn",
+    name: "sana pandey",
     avatar: "/avatars/shadcn.jpg",
   },
-  navMain: [
+    navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard  ",
       icon: IconDashboard,
     },
     {
@@ -135,7 +135,20 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  studentName?: string
+}
+
+export function AppSidebar({ studentName, ...props }: AppSidebarProps) {
+  // prefer the passed studentName if provided, otherwise fall back to the default in `data`
+  const sidebarData = {
+    ...data,
+    user: {
+      ...data.user,
+      name: studentName ?? data.user.name,
+    },
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -151,12 +164,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={sidebarData.navMain} />
+        <NavDocuments items={sidebarData.documents} />
+        <NavSecondary items={sidebarData.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={sidebarData.user} />
       </SidebarFooter>
     </Sidebar>
   )
