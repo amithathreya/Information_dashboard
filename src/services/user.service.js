@@ -23,7 +23,6 @@ export const registerUser = async (USN, password) => {
   await newUser.save();
   return { success: true };
 };
-
 export const getUserInfo = async (USN) => {
   return await Info.findOne({ USN });
 };
