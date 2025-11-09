@@ -13,3 +13,15 @@ export function authenticateJWT(req, res, next) {
 	req.user = decoded;
 	next();
 }
+
+// Optional version: sets req.user when valid, otherwise continues without blocking
+export function optionalAuthenticateJWT(req, _res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return next();
+  const decoded = verifyToken(token);
+  if (decoded) {
+    req.user = decoded;
+  }
+  next();
+}

@@ -1,16 +1,4 @@
-import mongoose from 'mongoose';
+// Consolidated model: re-export the unified Record model
+import Record from './record.model.js';
 
-const gradesSchema = new mongoose.Schema(
-  {
-    USN: { type: String, required: true },
-    Course_Code: { type: String, required: true },
-    Course_Name: { type: String, required: true },
-    GradePoint: { type: Number, required: true },
-    LetterGrade: { type: String, required: true },
-  },
-  { collection: "course_grades" }
-);
-
-const Grades = mongoose.models.Grades || mongoose.model('Grades', gradesSchema);
-
-export default Grades;
+export default Record;

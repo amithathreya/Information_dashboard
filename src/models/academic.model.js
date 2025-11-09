@@ -1,14 +1,4 @@
-import mongoose from 'mongoose';
+// Consolidated model: re-export the unified Record model
+import Record from './record.model.js';
 
-const academicSchema = new mongoose.Schema(
-  {
-    USN: { type: String, required: true, unique: true },
-    PreviousSemesterGPA: { type: Number, required: true },
-    CumulativeGPA: { type: Number, required: true },
-  },
-  { collection: "academic_records" }
-);
-
-const Academic = mongoose.models.Academic || mongoose.model('Academic', academicSchema);
-
-export default Academic;
+export default Record;
