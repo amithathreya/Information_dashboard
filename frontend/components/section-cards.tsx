@@ -15,10 +15,11 @@ interface SectionCardsProps {
   usn: string;
   department: string;
   academicYear: string;
+  semester?: string;
   academicData?: any;
 }
 
-export function SectionCards({ name, usn, department, academicYear, academicData }: SectionCardsProps) {
+export function SectionCards({ name, usn, department, academicYear, semester, academicData }: SectionCardsProps) {
   // Extract GPA values from academicData
   const previousSemesterGPA = academicData?.PreviousSemesterGPA ?? "-";
   const cumulativeGPA = academicData?.CumulativeGPA ?? "-";
@@ -40,7 +41,7 @@ export function SectionCards({ name, usn, department, academicYear, academicData
         <CardHeader>
           <CardDescription>Current Semester</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {academicYear}
+            {semester ?? academicYear}
           </CardTitle>
           <CardAction>
             
@@ -49,24 +50,19 @@ export function SectionCards({ name, usn, department, academicYear, academicData
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
 
             <div className="line-clamp-1 flex gap-2 font-medium">
-              {academicYear}
+              {`Semester ${semester ?? academicYear}`}
             </div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
         <CardHeader>    
-          <CardDescription>Previous Semester GPA</CardDescription>
+          <CardDescription>Semester GPA</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {previousSemesterGPA}
           </CardTitle>
           <CardAction>
           </CardAction>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            CumulativeGPA: {cumulativeGPA}
-          </div>
-        </CardFooter>
       </Card>
       <Card className="@container/card">
         <CardHeader>
