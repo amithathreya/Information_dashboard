@@ -43,6 +43,10 @@ export function StudentEditor({ open, onOpenChange, usn, semester, tokenResolver
       setError(null)
       try {
         const res = await fetch(fetchEndpoint(usn, semester), { headers: { Authorization: token ? `Bearer ${token}` : "" } })
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "")
+          throw new Error(`Fetch failed (${res.status}) ${txt}`)
+        }
         const data = await res.json()
         // Try several shapes:
         // 1. Direct array (raw mode)
@@ -63,7 +67,7 @@ export function StudentEditor({ open, onOpenChange, usn, semester, tokenResolver
         else if (Array.isArray(data?.data)) arr = data.data
 
         if (!Array.isArray(arr)) arr = []
-        const normalized = arr.map((s) => ({
+        let normalized = arr.map((s) => ({
           _id: (s as any)._id,
           subject_name: (s as any).subject_name || (s as any).Course_Name || "",
           subject_marks: Number((s as any).subject_marks ?? (s as any).marks ?? 0),
@@ -71,6 +75,27 @@ export function StudentEditor({ open, onOpenChange, usn, semester, tokenResolver
           classes_conducted: Number((s as any).classes_conducted ?? 0),
           attendance: Number((s as any).attendance ?? 0),
         }))
+        // Fallback: if nothing found, try raw admin endpoint and filter by USN
+        if (!normalized.length) {
+          try {
+            const rawRes = await fetch(`http://localhost:8080/admin/students?semester=${semester}&debug=raw`, { headers: { Authorization: token ? `Bearer ${token}` : "" } })
+            if (rawRes.ok) {
+              const rawJson = await rawRes.json()
+              const rawArr: any[] = Array.isArray(rawJson) ? rawJson : []
+              const filtered = rawArr.filter((doc) => (doc?.USN || doc?.usn || "").toString() === usn.toString())
+              normalized = filtered.map((s) => ({
+                _id: (s as any)._id,
+                subject_name: (s as any).subject_name || (s as any).Course_Name || "",
+                subject_marks: Number((s as any).subject_marks ?? (s as any).marks ?? 0),
+                classes_attended: Number((s as any).classes_attended ?? 0),
+                classes_conducted: Number((s as any).classes_conducted ?? 0),
+                attendance: Number((s as any).attendance ?? 0),
+              }))
+            }
+          } catch {
+            // ignore fallback error, we'll show empty state
+          }
+        }
         setSubjects(normalized)
       } catch (e: any) {
         setError(e?.message || "Failed to load subjects")
@@ -152,24 +177,24 @@ export function StudentEditor({ open, onOpenChange, usn, semester, tokenResolver
                       <TableCell>
                         <Input
                           type="number"
-                          value={Number(s.subject_marks ?? 0)}
-                          onChange={(e) => updateField(idx, "subject_marks", Number(e.target.value))}
+                          value={String(Number(s.subject_marks ?? 0) || 0)}
+                          onChange={(e) => updateField(idx, "subject_marks", Number(e.target.value) || 0)}
                           className="w-24"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
                           type="number"
-                          value={Number(s.classes_attended ?? 0)}
-                          onChange={(e) => updateField(idx, "classes_attended", Number(e.target.value))}
+                          value={String(Number(s.classes_attended ?? 0) || 0)}
+                          onChange={(e) => updateField(idx, "classes_attended", Number(e.target.value) || 0)}
                           className="w-24"
                         />
                       </TableCell>
                       <TableCell>
                         <Input
                           type="number"
-                          value={Number(s.classes_conducted ?? 0)}
-                          onChange={(e) => updateField(idx, "classes_conducted", Number(e.target.value))}
+                          value={String(Number(s.classes_conducted ?? 0) || 0)}
+                          onChange={(e) => updateField(idx, "classes_conducted", Number(e.target.value) || 0)}
                           className="w-24"
                         />
                       </TableCell>
