@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useMemo, useState } from "react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -147,19 +147,19 @@ export function StudentEditor({ open, onOpenChange, usn, semester, tokenResolver
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle>{usn ? `Edit Student ${usn} (Sem ${semester})` : "Edit Student"}</SheetTitle>
-        </SheetHeader>
-        <div className="p-4">
-          {error && <div className="text-red-600 text-sm mb-2 break-words">{error}</div>}
-          {loading ? (
-            <div className="text-sm text-muted-foreground">Loading…</div>
-          ) : subjects.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No subjects found for this student / semester.</div>
-          ) : (
-            <div className="space-y-4">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl w-full max-h-[85vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>{usn ? `Edit Student ${usn} (Sem ${semester})` : "Edit Student"}</DialogTitle>
+        </DialogHeader>
+        <div className="mt-2 grid gap-4 overflow-hidden">
+          {error && <div className="text-red-600 text-sm -mt-2 break-words">{error}</div>}
+          <div className="overflow-auto -mx-1 px-1" style={{ maxHeight: "55vh" }}>
+            {loading ? (
+              <div className="text-sm text-muted-foreground">Loading…</div>
+            ) : subjects.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No subjects found for this student / semester.</div>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -167,13 +167,13 @@ export function StudentEditor({ open, onOpenChange, usn, semester, tokenResolver
                     <TableHead>Marks</TableHead>
                     <TableHead>Attended</TableHead>
                     <TableHead>Conducted</TableHead>
-                    <TableHead>Attendance %</TableHead>
+                    <TableHead className="text-right">Attendance %</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {subjects.map((s, idx) => (
                     <TableRow key={`${s._id || s.subject_name}-${idx}`}>
-                      <TableCell className="font-medium max-w-[240px] truncate">{s.subject_name}</TableCell>
+                      <TableCell className="font-medium max-w-[260px] truncate">{s.subject_name}</TableCell>
                       <TableCell>
                         <Input
                           type="number"
@@ -203,18 +203,18 @@ export function StudentEditor({ open, onOpenChange, usn, semester, tokenResolver
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-        <SheetFooter>
+        <DialogFooter>
           <div className="flex w-full justify-end gap-2">
-            <SheetClose asChild>
+            <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
-            </SheetClose>
+            </DialogClose>
             <Button onClick={handleSave} disabled={loading}>Save Changes</Button>
           </div>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

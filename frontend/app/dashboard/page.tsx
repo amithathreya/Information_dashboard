@@ -136,6 +136,7 @@ export default function Page() {
     return () => window.removeEventListener("semester-changed", handler as EventListener);
   }, [semester]);
   return (
+    <ThemeProvider attribute="class" forcedTheme="light" enableSystem={false}>
     <SidebarProvider
       style={
         {
@@ -215,5 +216,6 @@ export default function Page() {
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </ThemeProvider>
   );
 }

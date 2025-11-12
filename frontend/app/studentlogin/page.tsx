@@ -61,7 +61,7 @@ function StudentLogin({ onAdminClick }: StudentLoginProps) {
   };
 
   return (
-    <AuroraBackground>
+    <AuroraBackground variant="light">
       <motion.div
         initial={{ opacity: 0.0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -70,19 +70,19 @@ function StudentLogin({ onAdminClick }: StudentLoginProps) {
           duration: 0.8,
           ease: "easeInOut",
         }}
-        className="relative flex flex-col gap-4 items-center justify-center px-4 text-white"
+        className="relative flex flex-col gap-4 items-center justify-center px-4 text-slate-900"
       >
-        <div className="flex-col items-center text-white">
+        <div className="flex-col items-center text-slate-900">
       {/* Header bar */}
-      <header className="w-full text-center py-3 text-white">
-        <h1 className="text-3xl font-bold mt-20 text-white">STUDENT LOGIN </h1>
+      <header className="w-full text-center py-3">
+        <h1 className="text-3xl font-bold mt-20">STUDENT LOGIN </h1>
       </header>
       <div className="w-full flex justify-center mt-8 py-40 ">
-        <div className="w-104 h-65 p-8 rounded-xl bg-black/30 backdrop-blur-md opacity-70 text-white">
+        <div className="w-104 h-65 p-8 rounded-xl bg-white/70 backdrop-blur-md text-slate-900">
           <form onSubmit={handleSubmit}>
             <Input
               type="text"
-              className="mb-4 h-15 text-white placeholder-white"
+              className="mb-4 h-15"
               placeholder="USN"
               value={USN}
               onChange={(e) => setUSN(e.target.value)}
@@ -90,7 +90,7 @@ function StudentLogin({ onAdminClick }: StudentLoginProps) {
             />
             <Input
               type="password"
-              className="mb-4 h-15 rounded-md p-2 text-white placeholder-white"
+              className="mb-4 h-15 rounded-md p-2"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -98,7 +98,7 @@ function StudentLogin({ onAdminClick }: StudentLoginProps) {
             />
             {/* No extra fields for registration */}
             <Button
-              className="w-full p-2 py-5 bg-green-600 text-white rounded-md cursor-pointer text-lg hover:bg-green-900 transition-colors duration-300"
+              className="w-full p-2 py-5 bg-green-600 text-white rounded-md cursor-pointer text-lg hover:bg-green-700 transition-colors duration-300"
               size="lg"
               type="submit"
             >
@@ -109,7 +109,7 @@ function StudentLogin({ onAdminClick }: StudentLoginProps) {
             <Button
               type="button"
               variant="link"
-              className="text-white underline"
+              className="underline"
               onClick={() => setIsRegister((prev) => !prev)}
             >
               {isRegister ? "Already have an account? Login" : "Don't have an account? Register"}

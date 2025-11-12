@@ -116,6 +116,9 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    font-size: 17px; /* Slightly increase base font size for a subtle global bump */
+  }
   body {
     @apply bg-background text-foreground;
   }
