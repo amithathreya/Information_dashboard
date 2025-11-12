@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { authenticateJWT, optionalAuthenticateJWT } from '../middlewares/jwt.middleware.js';
+// JWT auth temporarily disabled for admin dashboard endpoints
 import { getStudents, patchUpdateSemesterSubjects } from '../controllers/admin.controller.js';
 
 const router = Router();
 
-// GET /admin/students?semester=8 (public read; optional auth)
-router.get('/students', optionalAuthenticateJWT, getStudents);
+// GET /admin/students?semester=8 (public)
+router.get('/students', getStudents);
 
-// PATCH /admin/updateSemesterSubjects/:USN?semester=8
-router.patch('/updateSemesterSubjects/:USN', authenticateJWT, patchUpdateSemesterSubjects);
+// PATCH /admin/updateSemesterSubjects/:USN?semester=8 (public for now)
+router.patch('/updateSemesterSubjects/:USN', patchUpdateSemesterSubjects);
 
 export default router;
