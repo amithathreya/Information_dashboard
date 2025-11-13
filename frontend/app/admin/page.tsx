@@ -41,6 +41,7 @@ export default function AdminPage() {
   const [searchMode, setSearchMode] = useState<"usn" | "name">("usn")
   const [viewerOpen, setViewerOpen] = useState(false)
   const token = useMemo(() => (typeof window !== "undefined" ? (localStorage.getItem("token") || localStorage.getItem("jwt")) : null), [])
+  const [highlightUSN, setHighlightUSN] = useState<string | null>(null)
 
   const fetchStudents = useCallback(async (sem: string) => {
     setLoading(true)
@@ -103,6 +104,20 @@ export default function AdminPage() {
     fetchStudents(semester) // refresh list after save
   }
 
+  const goToStudentCard = (usn: string) => {
+    setSearchOpen(false)
+    // Delay to ensure dialog closes and layout is stable
+    setTimeout(() => {
+      const el = document.getElementById(`student-${usn}`)
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" })
+        setHighlightUSN(usn)
+        // Remove highlight after a short time
+        setTimeout(() => setHighlightUSN((curr) => (curr === usn ? null : curr)), 1600)
+      }
+    }, 50)
+  }
+
   return (
     <ThemeProvider attribute="class" forcedTheme="light" enableSystem={false}>
     <SidebarProvider>
@@ -132,7 +147,13 @@ export default function AdminPage() {
 
           <div className="grid gap-4 grid-cols-1">
             {students.map(st => (
-              <StudentCard key={st.usn} student={st} onOpen={openEditor} onView={openViewer} />
+              <div
+                key={st.usn}
+                id={`student-${st.usn}`}
+                className={`rounded-xl transition ring-offset-2 ${highlightUSN === st.usn ? 'ring-2 ring-primary' : ''}`}
+              >
+                <StudentCard student={st} onOpen={openEditor} onView={openViewer} />
+              </div>
             ))}
             {!loading && students.length === 0 && (
               <div className="text-sm text-muted-foreground col-span-full">No students found for semester {semester}.</div>
@@ -170,7 +191,7 @@ export default function AdminPage() {
           {searchMode === "usn" ? (
             <CommandGroup heading="By USN">
               {students.map((st) => (
-                <CommandItem key={st.usn} onSelect={() => { setSearchOpen(false); openEditor(st.usn) }}>
+                <CommandItem key={st.usn} onSelect={() => goToStudentCard(st.usn)}>
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="font-mono tabular-nums font-medium">{st.usn}</span>
                     <span className="text-muted-foreground truncate">{st.name}</span>
@@ -181,7 +202,7 @@ export default function AdminPage() {
           ) : (
             <CommandGroup heading="By Name">
               {students.map((st) => (
-                <CommandItem key={st.usn} onSelect={() => { setSearchOpen(false); openEditor(st.usn) }}>
+                <CommandItem key={st.usn} onSelect={() => goToStudentCard(st.usn)}>
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="font-medium truncate">{st.name}</span>
                     <span className="text-muted-foreground font-mono tabular-nums">{st.usn}</span>

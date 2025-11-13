@@ -29,11 +29,8 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
     .join("")
     .toUpperCase()
   return (
-    <Card
-      className="cursor-pointer hover:shadow-md transition w-full h-56"
-      onClick={() => onOpen(student.usn)}
-    >
-      <div className="h-full p-3 flex items-stretch gap-4">
+    <Card className="hover:shadow-md transition w-full h-56">
+  <div className="h-full px-3 py-0 flex items-stretch gap-2">
         {/* Left: Square image with inner margins */}
         <div className="relative h-full aspect-square rounded-xl overflow-hidden bg-muted">
           {student.imageUrl ? (
@@ -55,10 +52,10 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
         </div>
 
         {/* Middle: Personal info */}
-        <div className="flex-[1.2] min-w-0 py-1">
+        <div className="flex-[1.2] min-w-0 py-0">
           <div className="text-sm text-muted-foreground truncate">{student.department || "CSE"}</div>
           <div className="text-xl font-semibold truncate">{student.name}</div>
-          <div className="mt-2 space-y-1 text-[13px]">
+          <div className="mt-0 space-y-1 text-[13px]">
             <div className="flex items-center gap-2 min-w-0">
               <span className="font-medium">Phone:</span>
               <span className="truncate">{(student.phone && String(student.phone).trim()) || "0000000000"}</span>
@@ -68,7 +65,7 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
               <span className="truncate">{student.usn}</span>
             </div>
           </div>
-          <div className="pt-3 flex gap-2">
+          <div className="pt-1 flex gap-1">
             <Button
               size="sm"
               variant="outline"
@@ -96,21 +93,19 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
         <div className="w-px bg-border self-stretch" />
 
         {/* Right: Academic details */}
-        <div className="flex-[1.2] min-w-0 py-1 flex flex-col justify-between">
-          <div className="text-[13px] min-h-0">
-            <div className="mt-0 max-h-28 overflow-auto px-0 py-0 space-y-0">
-              {(student.subjects ?? []).map((sub, idx) => (
-                <div key={idx} className="flex items-center gap-1 min-w-0">
-                  <span className="truncate flex-1" title={sub.name}>{sub.name}</span>
-                  <span className="font-medium tabular-nums">{isNaN(sub.marks) ? "-" : sub.marks}</span>
-                </div>
-              ))}
-              {(!student.subjects || student.subjects.length === 0) && (
-                <div className="text-muted-foreground">No subject marks</div>
-              )}
-            </div>
+  <div className="flex-[1.2] min-w-0 min-h-0 py-0 flex flex-col">
+          <div className="flex-1 min-h-0 overflow-auto scrollbar-hide text-[13px] mt-0 px-0 py-0 space-y-0 mb-1">
+            {(student.subjects ?? []).map((sub, idx) => (
+              <div key={idx} className="flex items-center gap-0.5 min-w-0">
+                <span className="truncate flex-1" title={sub.name}>{sub.name}</span>
+                <span className="font-medium tabular-nums">{isNaN(sub.marks) ? "-" : sub.marks}</span>
+              </div>
+            ))}
+            {(!student.subjects || student.subjects.length === 0) && (
+              <div className="text-muted-foreground">No subject marks</div>
+            )}
           </div>
-          <div className="pt-0 text-[13px] flex items-center gap-1">
+          <div className="text-[13px] flex items-center gap-1">
             <span className="font-medium">Average Attendance:</span>
             <span>{student.avgAttendance?.toFixed(1) ?? "-"}%</span>
           </div>
