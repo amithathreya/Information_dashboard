@@ -13,7 +13,6 @@ const recordSchema = new mongoose.Schema(
   { collection: 'student_records' }
 );
 
-// Default model name bound to semester_8 collection as requested
 const defaultCollectionName = 'semester_8';
 const DefaultModelName = `Record__${defaultCollectionName}`;
 const DefaultRecord = mongoose.models[DefaultModelName] || mongoose.model(DefaultModelName, recordSchema, defaultCollectionName);

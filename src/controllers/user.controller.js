@@ -11,8 +11,6 @@ import {
 import { signToken } from '../utils/jwt.js';
 
 
-
-
 export const getUsers = async (req, res) => {
   try {
     const users = await getAllUsers();
@@ -21,8 +19,6 @@ export const getUsers = async (req, res) => {
     res.status(500).json({ message: 'Error fetching users' });
   }
 };
-
-
 
 
 export const login = async (req, res) => {
