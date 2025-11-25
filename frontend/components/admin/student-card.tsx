@@ -12,6 +12,14 @@ export interface StudentSummary {
   imageUrl?: string
   phone?: string
   subjects?: { name: string; marks: number }[]
+  personal?: {
+    _id?: string
+    usn?: string
+    age?: number
+    address?: string
+    phone_number?: string
+    mentor_name?: string
+  }
 }
 
 interface StudentCardProps {
@@ -29,7 +37,7 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
     .join("")
     .toUpperCase()
   return (
-    <Card className="hover:shadow-md transition w-full h-56">
+    <Card className="hover:shadow-md hover:bg-slate-100 transition-colors transition-shadow w-full h-56">
   <div className="h-full px-3 py-0 flex items-stretch gap-2">
         {/* Left: Square image with inner margins */}
         <div className="relative h-full aspect-square rounded-xl overflow-hidden bg-muted">
@@ -57,18 +65,15 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
           <div className="text-xl font-semibold truncate">{student.name}</div>
           <div className="mt-0 space-y-1 text-[13px]">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="font-medium">Phone:</span>
-              <span className="truncate">{(student.phone && String(student.phone).trim()) || "0000000000"}</span>
-            </div>
-            <div className="flex items-center gap-2 min-w-0">
               <span className="font-medium">USN:</span>
-              <span className="truncate">{student.usn}</span>
+              <span className="truncate">{(student.usn || "").toUpperCase()}</span>
             </div>
           </div>
           <div className="pt-1 flex gap-1">
             <Button
               size="sm"
               variant="outline"
+              className="hover:bg-slate-100 hover:scale-[1.02] transition-transform"
               onClick={(e) => {
                 e.stopPropagation()
                 onOpen(student.usn)
@@ -79,6 +84,7 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
             <Button
               size="sm"
               variant="secondary"
+              className="bg-green-700 text-white hover:bg-green-100 hover:text-green-700 hover:scale-[1.02] transition-colors transition-transform"
               onClick={(e) => {
                 e.stopPropagation()
                 onView?.(student.usn)
@@ -92,18 +98,25 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
         {/* Vertical divider */}
         <div className="w-px bg-border self-stretch" />
 
-        {/* Right: Academic details */}
-  <div className="flex-[1.2] min-w-0 min-h-0 py-0 flex flex-col">
-          <div className="flex-1 min-h-0 overflow-auto scrollbar-hide text-[13px] mt-0 px-0 py-0 space-y-0 mb-1">
-            {(student.subjects ?? []).map((sub, idx) => (
-              <div key={idx} className="flex items-center gap-0.5 min-w-0">
-                <span className="truncate flex-1" title={sub.name}>{sub.name}</span>
-                <span className="font-medium tabular-nums">{isNaN(sub.marks) ? "-" : sub.marks}</span>
-              </div>
-            ))}
-            {(!student.subjects || student.subjects.length === 0) && (
-              <div className="text-muted-foreground">No subject marks</div>
-            )}
+        {/* Right: Personal info (server now returns per-page students with `personal`) */}
+        <div className="flex-[1.2] min-w-0 min-h-0 py-0 flex flex-col justify-between">
+          <div className="flex-1 min-h-0 overflow-auto px-0 py-0 space-y-1 text-[13px]">
+            <div className="flex items-start gap-2">
+              <div className="font-medium">Age:</div>
+              <div className="truncate">{student.personal?.age ?? "-"}</div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="font-medium">Phone:</div>
+              <div className="truncate">{student.personal?.phone_number ?? student.phone ?? "0000000000"}</div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="font-medium">Mentor:</div>
+              <div className="truncate">{student.personal?.mentor_name ?? "-"}</div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="font-medium">Address:</div>
+              <div className="truncate">{student.personal?.address ?? "-"}</div>
+            </div>
           </div>
           <div className="text-[13px] flex items-center gap-1">
             <span className="font-medium">Average Attendance:</span>

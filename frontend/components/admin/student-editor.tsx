@@ -26,7 +26,8 @@ interface StudentEditorProps {
 }
 
 const defaultFetchEndpoint = (usn: string, semester: string) => `http://localhost:8080/users/getsemesterdata/${usn}?semester=${semester}`
-// Assumed bulk update endpoint. Adjust to match backend.
+// Bulk update endpoint for per-student semester subjects.
+// Use the update route: PATCH /admin/updateSemesterSubjects/:usn?semester=<n>
 const defaultSaveEndpoint = (usn: string, semester: string) => `http://localhost:8080/admin/updateSemesterSubjects/${usn}?semester=${semester}`
 
 export function StudentEditor({ open, onOpenChange, usn, semester, tokenResolver, fetchEndpoint = defaultFetchEndpoint, saveEndpoint = defaultSaveEndpoint, onSaved }: StudentEditorProps) {
@@ -128,15 +129,77 @@ export function StudentEditor({ open, onOpenChange, usn, semester, tokenResolver
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(saveEndpoint(usn, semester), {
+      // Use provided USN as-is (do not alter casing) and do not send empty Authorization header
+      const targetUsn = String(usn)
+      const url = saveEndpoint(targetUsn, semester)
+      const headers: Record<string, string> = { "Content-Type": "application/json" }
+      if (token) headers.Authorization = `Bearer ${token}`
+      const res = await fetch(url, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" },
+        headers,
         body: JSON.stringify({ subjects }),
       })
+
+      // Read response text and try to parse JSON
+      const respText = await res.text().catch(() => "")
+      let parsed: any = null
+      try { parsed = respText ? JSON.parse(respText) : null } catch { parsed = null }
       if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Save failed with ${res.status}`)
+        const errMsg = parsed?.message || respText || `Save failed with ${res.status}`
+        throw new Error(errMsg)
       }
+
+      // Preferred: use server-returned updated subjects/docs to update UI instantly
+      // Server may return updated docs in several shapes: { subjects: [...] } | { data: [...] } | { docs: [...] } | { student: { subjects: [...] } }
+      let updatedSubjects: any[] | null = null
+      if (Array.isArray(parsed?.subjects)) updatedSubjects = parsed.subjects
+      else if (Array.isArray(parsed?.data)) {
+        // data could be an array of students or subjects; try to find matching student
+        const maybeStudent = parsed.data.find && parsed.data.find((d: any) => (d?.usn || d?.USN || "").toString().toUpperCase() === targetUsn)
+        if (maybeStudent && Array.isArray(maybeStudent.subjects)) updatedSubjects = maybeStudent.subjects
+        else updatedSubjects = parsed.data
+      } else if (Array.isArray(parsed?.docs)) updatedSubjects = parsed.docs
+      else if (parsed?.student && Array.isArray(parsed.student.subjects)) updatedSubjects = parsed.student.subjects
+
+      if (updatedSubjects && Array.isArray(updatedSubjects)) {
+        const normalized = updatedSubjects.map((s: any) => ({
+          _id: s._id,
+          subject_name: s.subject_name || s.Course_Name || "",
+          subject_marks: Number(s.subject_marks ?? s.marks ?? 0),
+          classes_attended: Number(s.classes_attended ?? 0),
+          classes_conducted: Number(s.classes_conducted ?? 0),
+          attendance: Number(s.attendance ?? 0),
+        }))
+        setSubjects(normalized)
+      } else {
+        // Fallback: re-fetch authoritative data with cache-bypass
+        try {
+          const freshRes = await fetch(fetchEndpoint(targetUsn, semester), { headers: token ? { Authorization: `Bearer ${token}` } : undefined, cache: "no-cache" } as any)
+          if (freshRes.ok) {
+            const fresh = await freshRes.json()
+            let arr: any[] = []
+            if (Array.isArray(fresh)) arr = fresh
+            else if (Array.isArray(fresh?.subjects)) arr = fresh.subjects
+            else if (Array.isArray(fresh?.students)) {
+              const match = fresh.students.find((st: any) => (st?.usn || st?.USN || "").toString().toUpperCase() === targetUsn)
+              if (match && Array.isArray(match.subjects)) arr = match.subjects
+            } else if (Array.isArray(fresh?.data)) arr = fresh.data
+
+            const normalized = arr.map((s: any) => ({
+              _id: s._id,
+              subject_name: s.subject_name || s.Course_Name || "",
+              subject_marks: Number(s.subject_marks ?? s.marks ?? 0),
+              classes_attended: Number(s.classes_attended ?? 0),
+              classes_conducted: Number(s.classes_conducted ?? 0),
+              attendance: Number(s.attendance ?? 0),
+            }))
+            setSubjects(normalized)
+          }
+        } catch {
+          // ignore fallback errors
+        }
+      }
+
       onSaved?.()
       onOpenChange(false)
     } catch (e: any) {
