@@ -14,8 +14,8 @@ export async function listStudentsBySemester(semester) {
   // Pipeline: group all subject rows under same USN
   const pipeline = [
     { $match: { } }, // all docs in semester collection
-    // Build a canonical USN supporting both 'USN' and 'usn'
-    { $addFields: { canonicalUSN: { $ifNull: ['$USN', '$usn'] } } },
+    // Build a canonical, lowercased USN supporting both 'USN' and 'usn'
+    { $addFields: { canonicalUSN: { $toLower: { $ifNull: ['$USN', '$usn'] } } } },
     { $match: { canonicalUSN: { $ne: null } } },
     {
       $group: {
@@ -35,6 +35,20 @@ export async function listStudentsBySemester(semester) {
         subjectsCount: { $sum: 1 }
       }
     },
+      // Join personal details from `personal_details` collection by USN
+      {
+        $lookup: {
+            from: 'personal_information',
+            let: { usn_lower: '$_id' },
+            pipeline: [
+              { $addFields: { usn_lower: { $toLower: { $ifNull: ['$USN', '$usn'] } } } },
+              { $match: { $expr: { $eq: ['$usn_lower', '$$usn_lower'] } } },
+              { $project: { usn_lower: 0 } }
+            ],
+            as: 'personal'
+        }
+      },
+      { $addFields: { personal: { $arrayElemAt: ['$personal', 0] } } },
     {
       $project: {
         USN: '$_id',
@@ -43,6 +57,7 @@ export async function listStudentsBySemester(semester) {
         subjects: 1,
         avgMarks: { $round: ['$avgMarks', 2] },
         avgAttendance: { $round: ['$avgAttendance', 2] },
+          personal: 1,
         subjectsCount: 1
       }
     },
@@ -56,12 +71,14 @@ export async function listStudentsBySemester(semester) {
  * Generalized student list supporting semester or explicit collection name.
  * Keeps the same aggregation pipeline.
  */
-export async function listStudents({ semester, collectionName } = {}) {
+export async function listStudents({ semester, collectionName, USN } = {}) {
   if (!semester && !collectionName) throw new Error('semester or collectionName required');
   const Model = getRecordModel({ semester, collectionName });
   const pipeline = [
     { $match: {} },
-    { $addFields: { canonicalUSN: { $ifNull: ['$USN', '$usn'] } } },
+    { $addFields: { canonicalUSN: { $toLower: { $ifNull: ['$USN', '$usn'] } } } },
+    // If a USN filter is provided, match it after canonicalUSN is available (normalize provided USN)
+    ...(USN ? [{ $match: { canonicalUSN: USN.toLowerCase() } }] : []),
     { $match: { canonicalUSN: { $ne: null } } },
     {
       $group: {
@@ -81,6 +98,20 @@ export async function listStudents({ semester, collectionName } = {}) {
         subjectsCount: { $sum: 1 }
       }
     },
+    // Join personal details from `personal_information` collection by USN (case-insensitive)
+    {
+      $lookup: {
+        from: 'personal_information',
+        let: { usn_lower: '$_id' },
+        pipeline: [
+          { $addFields: { usn_lower: { $toLower: { $ifNull: ['$USN', '$usn'] } } } },
+          { $match: { $expr: { $eq: ['$usn_lower', '$$usn_lower'] } } },
+          { $project: { usn_lower: 0 } }
+        ],
+        as: 'personal'
+      }
+    },
+    { $addFields: { personal: { $arrayElemAt: ['$personal', 0] } } },
     {
       $project: {
         USN: '$_id',
@@ -89,11 +120,13 @@ export async function listStudents({ semester, collectionName } = {}) {
         subjects: 1,
         avgMarks: { $round: ['$avgMarks', 2] },
         avgAttendance: { $round: ['$avgAttendance', 2] },
+        personal: 1,
         subjectsCount: 1
       }
     },
     { $sort: { USN: 1 } }
   ];
+
   return await Model.aggregate(pipeline);
 }
 
@@ -140,24 +173,59 @@ export async function updateSemesterSubjects(USN, semester, subjects) {
       if (!subject_name) continue; // skip invalid row
       const attendance = classes_conducted > 0 ? Number(((classes_attended / classes_conducted) * 100).toFixed(2)) : 0;
 
-      await Model.updateOne(
-        { USN, subject_name },
+      // Update all matching rows for this (USN, subject_name) in a case-insensitive way.
+      // Some documents store USN under `USN` or `usn`, and casing may vary. Use $expr
+      // with $toLower + $ifNull to match the normalized USN across documents.
+      const usnLower = String(USN).toLowerCase();
+      const filter = {
+        $expr: {
+          $and: [
+            { $eq: ['$subject_name', subject_name] },
+            { $eq: [ { $toLower: { $ifNull: ['$USN', '$usn'] } }, usnLower ] }
+          ]
+        }
+      };
+
+      // Try to update existing documents (case-insensitive match). Do NOT use upsert
+      // with an $expr filter because MongoDB disallows that. If no documents matched,
+      // insert a new document explicitly within the same session.
+      const updateResult = await Model.updateMany(
+        filter,
         {
           $set: {
-            name: subj.name || defaultName, // ensure name is present on upsert
+            name: subj.name || defaultName,
             subject_marks,
             classes_attended,
             classes_conducted,
             attendance
           }
         },
-        { upsert: true, session, runValidators: false }
+        { session, runValidators: false }
       );
+
+      // If nothing matched, create a new subject row using the canonical `USN` field.
+      // Use `create` with the session so the operation is part of the transaction.
+      const matched = (updateResult && (updateResult.matchedCount || updateResult.n || updateResult.nMatched)) || 0;
+      if (!matched) {
+        const newDoc = {
+          USN,
+          name: subj.name || defaultName,
+          subject_name,
+          subject_marks,
+          classes_attended,
+          classes_conducted,
+          attendance
+        };
+        await Model.create([newDoc], { session });
+      }
     }
     await session.commitTransaction();
     session.endSession();
-    // Return updated docs for confirmation
-    return await Model.find({ USN }).lean();
+    // Return updated docs for confirmation. Match case-insensitively against stored `USN` or `usn`.
+    const usnLower = String(USN).toLowerCase();
+    return await Model.find({
+      $expr: { $eq: [ { $toLower: { $ifNull: ['$USN', '$usn'] } }, usnLower ] }
+    }).lean();
   } catch (err) {
     await session.abortTransaction();
     session.endSession();

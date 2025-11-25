@@ -3,7 +3,7 @@ import { getRecordModel } from '../models/record.model.js';
 
 export async function getStudents(req, res) {
   try {
-    const { semester, collection: collectionName, debug } = req.query;
+    const { semester, collection: collectionName, debug, USN } = req.query;
     if (!semester && !collectionName) return res.status(400).json({ message: 'semester (or collection) is required' });
 
     if (debug === 'raw') {
@@ -11,7 +11,7 @@ export async function getStudents(req, res) {
       return res.status(200).json(raw);
     }
 
-    const students = await listStudents({ semester, collectionName });
+    const students = await listStudents({ semester, collectionName, USN });
     if (debug === '1' || debug === 'true') {
       const totalDocs = await countDocs({ semester, collectionName });
       return res.status(200).json({ meta: { totalDocs, grouped: students.length, semester, collectionName }, students });
