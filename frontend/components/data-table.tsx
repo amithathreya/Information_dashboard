@@ -36,7 +36,6 @@ export function DataTable(props: DataTableProps) {
             <TableHead className="w-[120px]">Marks</TableHead>
             <TableHead className="w-[160px]">Classes Attended</TableHead>
             <TableHead className="w-[160px]">Classes Conducted</TableHead>
-            <TableHead className="text-right">Attendance %</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -46,7 +45,6 @@ export function DataTable(props: DataTableProps) {
               <TableCell>{row.subject_marks}</TableCell>
               <TableCell>{row.classes_attended}</TableCell>
               <TableCell>{row.classes_conducted}</TableCell>
-              <TableCell className="text-right">{row.attendance}</TableCell>
             </TableRow>
           ))}
         </TableBody>

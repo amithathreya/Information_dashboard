@@ -4,8 +4,6 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SiteHeader } from "@/components/site-header"
 import { StudentCard, StudentSummary } from "@/components/admin/student-card"
-import { StudentEditor } from "@/components/admin/student-editor"
-import { StudentViewer } from "@/components/admin/student-viewer"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,11 +42,8 @@ export default function AdminPage() {
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedUSN, setSelectedUSN] = useState<string | null>(null)
-  const [editorOpen, setEditorOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchMode, setSearchMode] = useState<"usn" | "name">("usn")
-  const [viewerOpen, setViewerOpen] = useState(false)
   const token = useMemo(() => (typeof window !== "undefined" ? (localStorage.getItem("token") || localStorage.getItem("jwt")) : null), [])
   const [highlightUSN, setHighlightUSN] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState<number>(1)
@@ -134,20 +129,6 @@ export default function AdminPage() {
 
   // Stats cards removed per request
 
-  const openEditor = (usn: string) => {
-    setSelectedUSN(usn)
-    setEditorOpen(true)
-  }
-
-  const openViewer = (usn: string) => {
-    setSelectedUSN(usn)
-    setViewerOpen(true)
-  }
-
-  const handleSaved = () => {
-    fetchStudents(semester) // refresh list after save
-  }
-
   const goToStudentCard = (usn: string) => {
     setSearchOpen(false)
     // If the student is on a different page, switch to that page first
@@ -198,7 +179,7 @@ export default function AdminPage() {
 
           {/* Stats cards removed */}
 
-          <div className="grid gap-4 grid-cols-1">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {
               // If server provides meta, render the returned page; otherwise paginate client-side from the full array
             }
@@ -218,7 +199,7 @@ export default function AdminPage() {
                     id={`student-${st.usn}`}
                     className={`rounded-xl transition ring-offset-2 ${highlightUSN === st.usn ? 'ring-2 ring-primary' : ''}`}
                   >
-                    <StudentCard student={st} onOpen={openEditor} onView={openViewer} />
+                    <StudentCard student={st} semester={semester} />
                   </div>
                 ))
               })()
@@ -245,22 +226,6 @@ export default function AdminPage() {
             </div>
         </div>
       </SidebarInset>
-      <StudentEditor
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        usn={selectedUSN}
-        semester={semester}
-        onSaved={handleSaved}
-      />
-      <StudentViewer
-        open={viewerOpen}
-        onOpenChange={setViewerOpen}
-        usn={selectedUSN}
-        semester={semester}
-        name={students.find(s => s.usn === selectedUSN)?.name}
-        department={students.find(s => s.usn === selectedUSN)?.department}
-        phone={(students.find(s => s.usn === selectedUSN) as any)?.phone}
-      />
       <CommandDialog open={searchOpen} onOpenChange={setSearchOpen} title="Search Students" description="Find by USN or Name" className="sm:max-w-xl">
         <CommandInput placeholder={searchMode === "usn" ? "Search by USN…" : "Search by name…"} />
         <div className="px-2 py-1.5">

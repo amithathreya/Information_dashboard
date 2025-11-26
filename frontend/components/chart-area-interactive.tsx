@@ -1,9 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-
-import { Bar, BarChart } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, Bar, BarChart, ResponsiveContainer } from "recharts"
 
 
 import { useIsMobile} from "@/hooks/use-mobile"
@@ -24,8 +22,12 @@ import {
 
 const chartConfig: ChartConfig = {
   desktop: {
-    label: "Desktop",
-    color: "#2563eb",
+    label: "Attendance",
+    color: "#10b981", // emerald
+  },
+  highlight: {
+    label: "Highlight",
+    color: "#f59e0b", // amber accent
   },
 };
 
@@ -55,30 +57,32 @@ export function ChartAreaInteractive(props: ChartAreaInteractiveProps) {
   const isEmpty = !barChartData.length;
 
   return (
-  <Card className="@container/card max-w-2xl mx-auto p-4">
-      <CardHeader className="py-2 px-2">
+  <Card className="@container/card w-full p-3 !bg-sky-100 border border-sky-300">
+      <CardHeader className="py-1 px-2">
         <CardTitle className="text-base">Attendance Report</CardTitle>
       </CardHeader>
-      <ChartContainer config={chartConfig} className="min-h-[100px] w-full">
+      <ChartContainer config={chartConfig} className="min-h-[80px] w-full">
         {isEmpty ? (
           <div className="text-center py-8 text-muted-foreground">No attendance data available.</div>
         ) : (
-          <BarChart accessibilityLayer data={barChartData} width={540} height={140}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="course"
-              tickLine={false}
-              tickMargin={12}
-              axisLine={false}
-              interval={0}
-              angle={-20}
-              textAnchor="end"
-              height={60}
-              tick={{ fontSize: 12, fill: '#333' }}
-            />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="attendance" fill="var(--color-desktop)" radius={4} barSize={40} />
-          </BarChart>
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart accessibilityLayer data={barChartData}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="course"
+                tickLine={false}
+                tickMargin={8}
+                axisLine={false}
+                interval={0}
+                angle={-15}
+                textAnchor="end"
+                height={48}
+                tick={{ fontSize: 11, fill: '#333' }}
+              />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="attendance" fill="var(--color-desktop)" radius={6} barSize={30} />
+            </BarChart>
+          </ResponsiveContainer>
         )}
       </ChartContainer>
     </Card>

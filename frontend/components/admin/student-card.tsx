@@ -1,6 +1,6 @@
 "use client"
+import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export interface StudentSummary {
@@ -24,11 +24,11 @@ export interface StudentSummary {
 
 interface StudentCardProps {
   student: StudentSummary
-  onOpen: (usn: string) => void
-  onView?: (usn: string) => void
+  semester?: string
 }
 
-export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
+export function StudentCard({ student, semester = "8" }: StudentCardProps) {
+  const router = useRouter()
   const initials = (student.name || student.usn || "?")
     .split(/\s+/)
     .filter(Boolean)
@@ -36,11 +36,18 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
     .slice(0, 2)
     .join("")
     .toUpperCase()
+  const handleClick = () => {
+    router.push(`/admin/student/dashboard?usn=${student.usn}&semester=${semester}`)
+  }
+
   return (
-    <Card className="hover:shadow-md hover:bg-slate-100 transition-colors transition-shadow w-full h-56">
-  <div className="h-full px-3 py-0 flex items-stretch gap-2">
-        {/* Left: Square image with inner margins */}
-        <div className="relative h-full aspect-square rounded-xl overflow-hidden bg-muted">
+    <Card 
+      className="hover:shadow-md hover:bg-slate-100 transition-colors transition-shadow w-full h-44 cursor-pointer"
+      onClick={handleClick}
+    >
+      <div className="h-full px-3 py-2 flex items-stretch gap-3">
+        {/* Left: Square image */}
+        <div className="relative h-32 w-32 flex-shrink-0 rounded-xl overflow-hidden bg-muted self-center">
           {student.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -60,38 +67,14 @@ export function StudentCard({ student, onOpen, onView }: StudentCardProps) {
         </div>
 
         {/* Middle: Personal info */}
-        <div className="flex-[1.2] min-w-0 py-0">
-          <div className="text-sm text-muted-foreground truncate">{student.department || "CSE"}</div>
-          <div className="text-xl font-semibold truncate">{student.name}</div>
-          <div className="mt-0 space-y-1 text-[13px]">
+        <div className="flex-1 min-w-0 py-0">
+          <div className="text-xs text-muted-foreground truncate">{student.department || "CSE"}</div>
+          <div className="text-lg font-semibold truncate">{student.name}</div>
+          <div className="mt-1 space-y-1 text-[13px]">
             <div className="flex items-center gap-2 min-w-0">
               <span className="font-medium">USN:</span>
               <span className="truncate">{(student.usn || "").toUpperCase()}</span>
             </div>
-          </div>
-          <div className="pt-1 flex gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              className="hover:bg-slate-100 hover:scale-[1.02] transition-transform"
-              onClick={(e) => {
-                e.stopPropagation()
-                onOpen(student.usn)
-              }}
-            >
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="bg-green-700 text-white hover:bg-green-100 hover:text-green-700 hover:scale-[1.02] transition-colors transition-transform"
-              onClick={(e) => {
-                e.stopPropagation()
-                onView?.(student.usn)
-              }}
-            >
-              View
-            </Button>
           </div>
         </div>
 

@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface SectionCardsProps {
   name: string;
@@ -24,23 +25,31 @@ export function SectionCards({ name, usn, department, academicYear, semester, ac
   const previousSemesterGPA = academicData?.PreviousSemesterGPA ?? "-";
   const cumulativeGPA = academicData?.CumulativeGPA ?? "-";
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription> Student Name </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {name}
-          </CardTitle>
-          <CardAction>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-        </CardFooter>
+    <div className="grid grid-cols-1 gap-3 pl-4 pr-0 lg:pl-6 lg:pr-0 w-full @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      <Card className="@container/card flex-row items-stretch px-3 py-2 !bg-sky-100 border border-sky-300">
+        <div className="flex-1">
+          <CardHeader className="px-2 py-1">
+            <CardDescription> Student Name </CardDescription>
+            <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">
+              {name}
+            </CardTitle>
+            <CardAction />
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1 text-sm px-2 py-1">
+          </CardFooter>
+        </div>
+        <div className="m-1 w-1/4 flex-shrink-0 flex items-center justify-center">
+          <img
+            src="/image.png"
+            alt={`${name} avatar`}
+            className="h-20 w-20 object-cover rounded-md border border-sky-300"
+          />
+        </div>
       </Card>
-      <Card className="@container/card">
+      <Card className="@container/card py-2 !bg-sky-100 border border-sky-300">
         <CardHeader>
           <CardDescription>Current Semester</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">
             {semester ?? academicYear}
           </CardTitle>
           <CardAction>
@@ -54,7 +63,7 @@ export function SectionCards({ name, usn, department, academicYear, semester, ac
             </div>
         </CardFooter>
       </Card>
-      <Card className="@container/card">
+      <Card className="@container/card !bg-sky-100 border border-sky-300">
         <CardHeader>    
           <CardDescription>Semester GPA</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
@@ -64,7 +73,7 @@ export function SectionCards({ name, usn, department, academicYear, semester, ac
           </CardAction>
         </CardHeader>
       </Card>
-      <Card className="@container/card">
+      <Card className="@container/card !bg-sky-100 border border-sky-300">
         <CardHeader>
           <CardDescription>Department</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">

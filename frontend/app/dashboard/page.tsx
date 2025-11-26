@@ -25,12 +25,14 @@ export default function Page() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [devToken, setDevToken] = useState<string>("");
   const [semester, setSemester] = useState<string>("8");
+  const [personalDetails, setPersonalDetails] = useState<any | null>(null);
+  const [personalError, setPersonalError] = useState<string | null>(null);
+  const [viewPersonalOnly, setViewPersonalOnly] = useState<boolean>(false);
 
-  // Load stored semester on client after mount to avoid SSR/CSR mismatch.
+  // Set semester to 8 on mount (ignore any stored value)
   useEffect(() => {
     try {
-      const s = localStorage.getItem("semester");
-      if (s) setSemester(s);
+      localStorage.setItem("semester", "8");
     } catch (e) {
       // ignore
     }
@@ -60,12 +62,17 @@ export default function Page() {
         // Map student info
         const info = data?.studentInfo ?? data?.user ?? data?.userInfo ?? data;
         if (info) {
+          const studentName = info.Name || info.name || info.FullName || "";
           setStudentInfo({
-            name: info.Name || info.name || info.FullName || "",
+            name: studentName,
             usn: info.USN || info.usn || usn,
             department: info.Department || info.department || "",
             academicYear: info.AcademicYear || info.academicYear || "",
           });
+          // Save name to localStorage for other pages
+          if (studentName) {
+            try { localStorage.setItem("name", studentName); } catch {}
+          }
         }
 
         // The backend now forwards plain semester documents as a single JSON array.
@@ -133,14 +140,63 @@ export default function Page() {
       }
     };
     window.addEventListener("semester-changed", handler as EventListener);
-    return () => window.removeEventListener("semester-changed", handler as EventListener);
+    // Listen for personal details
+    const personalHandler = async () => {
+      setViewPersonalOnly(true);
+      const usn = (localStorage.getItem("usn") || "").toString();
+      const token = localStorage.getItem("token") || localStorage.getItem("jwt") || "";
+      if (!usn) {
+        setPersonalError("USN not found. Please login first.");
+        setPersonalDetails(null);
+        return;
+      }
+      try {
+        const headers: Record<string, string> = { Accept: 'application/json' };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const res = await fetch(`http://localhost:8080/users/personal/${encodeURIComponent(usn)}`, {
+          headers,
+          cache: 'no-store',
+        });
+        if (!res.ok) {
+          setPersonalError(
+            res.status === 401
+              ? "Unauthorized. Please login or set a valid token."
+              : `Cannot load personal details (${res.status})`
+          );
+          setPersonalDetails(null);
+          return;
+        }
+        const json = await res.json();
+        // Normalize fields
+        const normalized = {
+          USN: json.USN || json.usn || usn,
+          name: json.name || json.Name || '-',
+          branch: json.branch || json.department || json.Branch || '-',
+          email: json.email || json.Email || '-',
+          phone: json.phone || json.phone_number || json.Phone || '-',
+          address: json.address || json.Address || '-',
+          mentor: json.mentor || json.mentor_name || '-',
+          age: json.age ?? json.Age ?? '-',
+        };
+        setPersonalError(null);
+        setPersonalDetails(normalized);
+      } catch (e) {
+        setPersonalError("Error fetching personal details.");
+        setPersonalDetails(null);
+      }
+    };
+    window.addEventListener('show-personal-details', personalHandler as EventListener);
+    return () => {
+      window.removeEventListener("semester-changed", handler as EventListener);
+      window.removeEventListener('show-personal-details', personalHandler as EventListener);
+    };
   }, [semester]);
   return (
     <ThemeProvider attribute="class" forcedTheme="light" enableSystem={false}>
     <SidebarProvider
       style={
         {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--sidebar-width": "calc(var(--spacing) * 56)",
           "--header-height": "calc(var(--spacing) * 12)",
         } as React.CSSProperties
       }
@@ -148,73 +204,109 @@ export default function Page() {
   <AppSidebar variant="inset" studentName={studentInfo.name} />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards
-                name={studentInfo.name}
-                usn={studentInfo.usn}
-                department={studentInfo.department || "Computer Science and Engineering"}
-                academicYear={studentInfo.academicYear}
-                semester={semester}
-                academicData={academicData}
-              />
-              {fetchError ? (
-                <Card className="m-4 border-red-400">
-                  <CardHeader>
-                    <CardTitle className="text-red-600">Cannot load data</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-4 text-sm text-red-500 break-words">{fetchError}</div>
-                    <div className="flex gap-2">
-                      <input
-                        value={devToken}
-                        onChange={(e) => setDevToken(e.target.value)}
-                        placeholder="Paste token here (dev)"
-                        className="flex-1 rounded-md border px-2 py-1 text-sm text-black"
-                      />
-                      <button
-                        className="rounded bg-green-600 px-3 py-1 text-white text-sm"
-                        onClick={() => {
-                          if (!devToken) return;
-                          localStorage.setItem("token", devToken);
-                          // reload to trigger fetch with token
-                          window.location.reload();
-                        }}
-                      >
-                        Set token
-                      </button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : null}
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive
-                  name={studentInfo.name}
-                  usn={studentInfo.usn}
-                  department={studentInfo.department || "Computer Science and Engineering"}
-                  academicYear={studentInfo.academicYear}
-                  attendanceData={attendanceData}
-                />
-              </div>
-              <Card className="m-4">
+        <div>
+          {viewPersonalOnly ? (
+            <div className="p-4 md:p-6">
+              <Card className="w-full">
                 <CardHeader>
-                  <CardTitle>Registered Courses</CardTitle>
+                  <CardTitle>Personal Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <DataTable
+                  {personalError ? (
+                    <div className="text-sm text-red-600">{personalError}</div>
+                  ) : personalDetails ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <div><span className="font-medium">USN:</span> {personalDetails.USN}</div>
+                      <div><span className="font-medium">Name:</span> {personalDetails.name}</div>
+                      <div><span className="font-medium">Branch:</span> {personalDetails.branch}</div>
+                      <div><span className="font-medium">Email:</span> {personalDetails.email}</div>
+                      <div><span className="font-medium">Phone:</span> {personalDetails.phone}</div>
+                      <div><span className="font-medium">Age:</span> {personalDetails.age}</div>
+                      <div className="sm:col-span-2"><span className="font-medium">Address:</span> {personalDetails.address}</div>
+                      <div className="sm:col-span-2"><span className="font-medium">Mentor:</span> {personalDetails.mentor}</div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">Loading personal details…</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="flex flex-1 flex-col">
+              <div className="@container/main flex flex-1 flex-col gap-2">
+                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                  <SectionCards
                     name={studentInfo.name}
                     usn={studentInfo.usn}
                     department={studentInfo.department || "Computer Science and Engineering"}
                     academicYear={studentInfo.academicYear}
-                    gradesData={gradesData}
+                    semester={semester}
+                    academicData={academicData}
                   />
-                </CardContent>
-              </Card>
+                  {fetchError ? (
+                    <Card className="ml-4 mr-0 border-red-400 max-w-[50%]">
+                      <CardHeader>
+                        <CardTitle className="text-red-600">Cannot load data</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="mb-4 text-sm text-red-500 break-words">{fetchError}</div>
+                        <div className="flex gap-2">
+                          <input
+                            value={devToken}
+                            onChange={(e) => setDevToken(e.target.value)}
+                            placeholder="Paste token here (dev)"
+                            className="flex-1 rounded-md border px-2 py-1 text-sm text-black"
+                          />
+                          <button
+                            className="rounded bg-green-600 px-3 py-1 text-white text-sm"
+                            onClick={() => {
+                              if (!devToken) return;
+                              localStorage.setItem("token", devToken);
+                              // reload to trigger fetch with token
+                              window.location.reload();
+                            }}
+                          >
+                            Set token
+                          </button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : null}
+                  <div className="pl-4 pr-0 lg:pl-6 lg:pr-0 w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="w-full">
+                        <ChartAreaInteractive
+                          name={studentInfo.name}
+                          usn={studentInfo.usn}
+                          department={studentInfo.department || "Computer Science and Engineering"}
+                          academicYear={studentInfo.academicYear}
+                          attendanceData={attendanceData}
+                        />
+                      </div>
+                      <div className="w-full">
+                        <Card className="w-full !bg-sky-100 border border-sky-300">
+                          <CardHeader>
+                            <CardTitle>Registered Courses</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <DataTable
+                              name={studentInfo.name}
+                              usn={studentInfo.usn}
+                              department={studentInfo.department || "Computer Science and Engineering"}
+                              academicYear={studentInfo.academicYear}
+                              gradesData={gradesData}
+                            />
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
-      </SidebarInset>
+    </SidebarInset>
     </SidebarProvider>
     </ThemeProvider>
   );
