@@ -25,3 +25,16 @@ export function optionalAuthenticateJWT(req, _res, next) {
   }
   next();
 }
+
+// Require an authenticated admin user (role === 'admin')
+export function requireAdmin(req, res, next) {
+	// First ensure token is valid and req.user is populated
+	authenticateJWT(req, res, function authNext(err) {
+		if (err) return next(err);
+		// authenticateJWT either sent a response on failure or set req.user
+		if (!req.user || req.user.role !== 'admin') {
+			return res.status(403).json({ message: 'Admin privileges required' });
+		}
+		return next();
+	});
+}

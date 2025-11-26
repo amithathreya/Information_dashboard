@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 import { getRecordModel } from '../models/record.model.js';
+import bcrypt from 'bcrypt';
+import Admin from '../models/admin.model.js';
+import PersonalInfo from '../models/personal.model.js';
 
 /**
  * List students for a given semester.
@@ -231,4 +234,89 @@ export async function updateSemesterSubjects(USN, semester, subjects) {
     session.endSession();
     throw err;
   }
+}
+
+// ----- Admin auth helpers -----
+/**
+ * Register an admin user.
+ * Stores username and hashed password in `admin` collection.
+ */
+export async function registerAdmin(username, password) {
+  if (!username || !password) throw new Error('username and password required');
+  const exists = await Admin.findOne({ username }).lean();
+  if (exists) throw new Error('admin already exists');
+  const saltRounds = 10;
+  const hashed = await bcrypt.hash(password, saltRounds);
+  const doc = new Admin({ username, password: hashed });
+  await doc.save();
+  return { success: true };
+}
+
+/**
+ * Verify admin credentials.
+ * Returns { success: boolean, reason?: string }
+ */
+export async function loginAdmin(username, password) {
+  if (!username || !password) return { success: false };
+  const admin = await Admin.findOne({ username });
+  if (!admin) return { success: false, reason: 'not_found' };
+  if (!admin.password) return { success: false, reason: 'no_password' };
+  try {
+    const match = await bcrypt.compare(password, admin.password);
+    if (!match) return { success: false, reason: 'mismatch' };
+    return { success: true };
+  } catch (err) {
+    console.error('loginAdmin error:', err);
+    throw err;
+  }
+}
+
+/**
+ * Update a single document in a semester collection (semester_1..8) or personal_information.
+ * Matches by USN (case-insensitive) or _id.
+ * @param {string} collection - collection name: 'semester_1'..'semester_8' or 'personal_information'
+ * @param {string} identifier - USN or _id value
+ * @param {Object} updates - fields to $set
+ * @returns {Promise<Object>} updated document
+ */
+export async function updateCollectionRecord(collection, identifier, updates) {
+  if (!collection) throw new Error('collection is required');
+  if (!identifier) throw new Error('identifier (USN or _id) is required');
+  if (!updates || typeof updates !== 'object') throw new Error('updates object is required');
+
+  // Determine the model
+  let Model;
+  if (collection === 'personal_information') {
+    Model = PersonalInfo;
+  } else if (/^semester_[1-8]$/.test(collection)) {
+    const semester = collection.split('_')[1];
+    Model = getRecordModel({ semester });
+  } else {
+    throw new Error('Invalid collection. Must be semester_1..semester_8 or personal_information');
+  }
+
+  // Build filter: try _id first, else USN (case-insensitive)
+  let filter;
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    filter = { _id: identifier };
+  } else {
+    const idLower = String(identifier).toLowerCase();
+    filter = {
+      $expr: { $eq: [{ $toLower: { $ifNull: ['$USN', '$usn'] } }, idLower] }
+    };
+  }
+
+  // Remove _id from updates if present (can't change _id)
+  const { _id, ...safeUpdates } = updates;
+
+  const result = await Model.findOneAndUpdate(filter, { $set: safeUpdates }, { new: true, runValidators: false }).lean();
+  if (!result) throw new Error('Document not found');
+  return result;
+}
+
+/**
+ * Convenience: update personal_information by USN.
+ */
+export async function updatePersonalInfo(USN, updates) {
+  return updateCollectionRecord('personal_information', USN, updates);
 }

@@ -1,6 +1,7 @@
 import User from '../models/user.model.js';
 import bcrypt from 'bcrypt';
 import Record, { getRecordModel } from '../models/record.model.js';
+import PersonalInfo from '../models/personal.model.js';
 
 function escapeRegex(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -28,12 +29,21 @@ export const loginUser = async (USN, password) => {
   if (!USN || !password) return { success: false };
   const filter = buildUsnFilter(USN);
   const user = await User.findOne(filter);
-  if (!user) return { success: false };
+  if (!user) {
+    console.debug(`loginUser: user not found for USN='${USN}'`);
+    return { success: false, reason: 'not_found' };
+  }
   try {
+    if (!user.password) {
+      console.debug(`loginUser: user record for USN='${USN}' has no password field`);
+      return { success: false, reason: 'no_password' };
+    }
     const match = await bcrypt.compare(password, user.password);
-    return { success: match };
+    if (!match) console.debug(`loginUser: password mismatch for USN='${USN}'`);
+    return { success: match, reason: match ? 'ok' : 'mismatch' };
   } catch (err) {
     // rethrow so controller can return diagnostic info
+    console.error('loginUser: error verifying password for USN=', USN, err);
     throw new Error('Error verifying password: ' + (err.message || err));
   }
 };
@@ -97,4 +107,22 @@ export const getUserSemesterData = async (USN, upperSemester, lowerSemester) => 
     }
   }
   return results;
+};
+
+// Fetch only personal details for a given USN from personal_information
+export const getUserPersonalDetails = async (USN) => {
+  if (!USN) return null;
+  // Match case-insensitively on USN/usn
+  const trimmed = String(USN).trim();
+  const esc = escapeRegex(trimmed);
+  const filter = {
+    $or: [
+      { USN: trimmed },
+      { usn: trimmed },
+      { USN: { $regex: `^${esc}$`, $options: 'i' } },
+      { usn: { $regex: `^${esc}$`, $options: 'i' } }
+    ]
+  };
+  // Return single doc
+  return await PersonalInfo.findOne(filter).lean();
 };

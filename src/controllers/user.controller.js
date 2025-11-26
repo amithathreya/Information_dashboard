@@ -7,6 +7,7 @@ import {
   getUserSemesterData,
   getUserInfo
 } from '../services/user.service.js';
+import { getUserPersonalDetails } from '../services/user.service.js';
 // mongoose import removed
 import { signToken } from '../utils/jwt.js';
 
@@ -22,8 +23,10 @@ export const getUsers = async (req, res) => {
 
 
 export const login = async (req, res) => {
-  const { USN, password } = req.body;
+  const USN = req.body.USN || req.body.usn || req.body.username;
+  const password = req.body.password;
   try {
+    if (!USN || !password) return res.status(400).json({ message: 'USN and password are required' });
     const result = await loginUser(USN, password);
     if (result.success) {
       // Fetch user info for payload and response
@@ -47,8 +50,10 @@ export const login = async (req, res) => {
 
 
 export const register = async (req, res) => {
-  const { USN, password } = req.body;
+  const USN = req.body.USN || req.body.usn || req.body.username;
+  const password = req.body.password;
   try {
+    if (!USN || !password) return res.status(400).json({ message: 'USN and password are required' });
     await registerUser(USN, password);
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
@@ -128,6 +133,28 @@ export const getAcademic = async(req,res)=> {
     res.status(200).json(user);
   } catch(err) {
     res.status(500).json({ message: 'Error fetching user' });
+  }
+};
+
+// Personal details only from personal_information
+export const getPersonalDetails = async (req, res) => {
+  try {
+    const { USN } = req.params;
+    if (!USN) return res.status(400).json({ message: 'USN is required' });
+    // Enforce that the path USN matches the token's USN (student can only access their own data)
+    if (!req.user || !req.user.USN) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+    const pathUsn = String(USN).toLowerCase();
+    const tokenUsn = String(req.user.USN).toLowerCase();
+    if (pathUsn !== tokenUsn) {
+      return res.status(403).json({ message: 'USN mismatch: token does not match requested USN' });
+    }
+    const doc = await getUserPersonalDetails(USN);
+    if (!doc) return res.status(404).json({ message: 'Personal details not found' });
+    return res.status(200).json(doc);
+  } catch (err) {
+    return res.status(500).json({ message: 'Error fetching personal details', error: err.message || err });
   }
 };
 
