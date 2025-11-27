@@ -5,12 +5,18 @@ const recordSchema = new mongoose.Schema(
     name: { type: String, required: true },
     USN: { type: String, required: true, index: true },
     subject_name: { type: String, required: true },
-    subject_marks: { type: Number, required: true },
-    classes_conducted: { type: Number, required: true },
-    classes_attended: { type: Number, required: true },
-    attendance: { type: Number, required: true },
+    subject_marks: { type: Number },
+    classes_conducted: { type: Number },
+    classes_attended: { type: Number },
+    attendance: { type: Number },
+    IA1: { type: Number },
+    IA2: { type: Number },
+    IA3: { type: Number },
+    assignment_marks: { type: Number },
+    IA_average: { type: Number },
+    SEE_marks: { type: Number }
   },
-  { collection: 'student_records' }
+  { collection: 'student_records', strict: false }
 );
 
 const defaultCollectionName = 'semester_8';

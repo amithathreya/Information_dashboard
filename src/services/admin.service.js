@@ -170,6 +170,7 @@ export async function updateSemesterSubjects(USN, semester, subjects) {
       const {
         subject_name,
         subject_marks = 0,
+        grade = "",
         classes_attended = 0,
         classes_conducted = 0
       } = subj;
@@ -200,7 +201,8 @@ export async function updateSemesterSubjects(USN, semester, subjects) {
             subject_marks,
             classes_attended,
             classes_conducted,
-            attendance
+            attendance,
+            grade
           }
         },
         { session, runValidators: false }
@@ -217,7 +219,8 @@ export async function updateSemesterSubjects(USN, semester, subjects) {
           subject_marks,
           classes_attended,
           classes_conducted,
-          attendance
+          attendance,
+          grade
         };
         await Model.create([newDoc], { session });
       }
@@ -276,7 +279,7 @@ export async function loginAdmin(username, password) {
  * Matches by USN (case-insensitive) or _id.
  * @param {string} collection - collection name: 'semester_1'..'semester_8' or 'personal_information'
  * @param {string} identifier - USN or _id value
- * @param {Object} updates - fields to $set
+ * @param {Object} updates - fields to $set (include subject_name to target specific subject)
  * @returns {Promise<Object>} updated document
  */
 export async function updateCollectionRecord(collection, identifier, updates) {
@@ -304,6 +307,10 @@ export async function updateCollectionRecord(collection, identifier, updates) {
     filter = {
       $expr: { $eq: [{ $toLower: { $ifNull: ['$USN', '$usn'] } }, idLower] }
     };
+    // If subject_name is provided, add it to filter to target specific subject
+    if (updates.subject_name) {
+      filter.subject_name = updates.subject_name;
+    }
   }
 
   // Remove _id from updates if present (can't change _id)
