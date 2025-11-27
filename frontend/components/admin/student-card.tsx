@@ -19,6 +19,7 @@ export interface StudentSummary {
     address?: string
     phone_number?: string
     mentor_name?: string
+    email?: string
   }
 }
 
@@ -75,6 +76,10 @@ export function StudentCard({ student, semester = "8" }: StudentCardProps) {
               <span className="font-medium">USN:</span>
               <span className="truncate">{(student.usn || "").toUpperCase()}</span>
             </div>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-medium">Mentor:</span>
+              <span className="truncate">{student.personal?.mentor_name ?? "-"}</span>
+            </div>
           </div>
         </div>
 
@@ -82,7 +87,7 @@ export function StudentCard({ student, semester = "8" }: StudentCardProps) {
         <div className="w-px bg-border self-stretch" />
 
         {/* Right: Personal info (server now returns per-page students with `personal`) */}
-        <div className="flex-[1.2] min-w-0 min-h-0 py-0 flex flex-col justify-between">
+        <div className="flex-[1.2] min-w-0 min-h-0 py-0 flex flex-col">
           <div className="flex-1 min-h-0 overflow-auto px-0 py-0 space-y-1 text-[13px]">
             <div className="flex items-start gap-2">
               <div className="font-medium">Age:</div>
@@ -93,15 +98,15 @@ export function StudentCard({ student, semester = "8" }: StudentCardProps) {
               <div className="truncate">{student.personal?.phone_number ?? student.phone ?? "0000000000"}</div>
             </div>
             <div className="flex items-start gap-2">
-              <div className="font-medium">Mentor:</div>
-              <div className="truncate">{student.personal?.mentor_name ?? "-"}</div>
-            </div>
-            <div className="flex items-start gap-2">
               <div className="font-medium">Address:</div>
               <div className="truncate">{student.personal?.address ?? "-"}</div>
             </div>
+            <div className="flex items-start gap-2">
+              <div className="font-medium">Email:</div>
+              <div className="truncate">{student.personal?.email ?? "-"}</div>
+            </div>
           </div>
-          <div className="text-[13px] flex items-center gap-1">
+          <div className="text-[13px] flex items-center gap-1 mt-1">
             <span className="font-medium">Average Attendance:</span>
             <span>{student.avgAttendance?.toFixed(1) ?? "-"}%</span>
           </div>

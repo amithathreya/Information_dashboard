@@ -1,6 +1,4 @@
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
 
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardAction,
@@ -9,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface SectionCardsProps {
   name: string;

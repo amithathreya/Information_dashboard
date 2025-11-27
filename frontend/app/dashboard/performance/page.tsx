@@ -12,6 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 interface PerformanceRecord {
   subjectName?: string;
+  IA1?: number;
+  IA2?: number;
+  IA3?: number;
+  assignment_marks?: number;
+  SEE_marks?: number;
   totalMarks?: number;
   grade?: string;
 }
@@ -19,6 +24,17 @@ interface PerformanceRecord {
 interface SemesterPerformance {
   semester: number;
   records: PerformanceRecord[];
+}
+
+// Auto-calculate grade based on marks
+function calculateGrade(marks: number): string {
+  if (marks >= 90) return "O";
+  if (marks >= 80) return "A+";
+  if (marks >= 70) return "A";
+  if (marks >= 60) return "B+";
+  if (marks >= 50) return "B";
+  if (marks >= 40) return "C";
+  return "F";
 }
 
 export default function PerformancePage() {
@@ -59,12 +75,23 @@ export default function PerformancePage() {
       [];
 
     const records: PerformanceRecord[] = rawArray.map((s: any) => {
-      const total = Number(s?.subject_marks ?? s?.total ?? s?.marks ?? 0);
+      const ia1 = Number(s?.IA1 ?? s?.ia1 ?? 0) || 0;
+      const ia2 = Number(s?.IA2 ?? s?.ia2 ?? 0) || 0;
+      const ia3 = Number(s?.IA3 ?? s?.ia3 ?? 0) || 0;
+      const assign = Number(s?.assignment_marks ?? 0) || 0;
+      const see = Number(s?.SEE_marks ?? s?.see ?? 0) || 0;
+      const iaAvg = (ia1 + ia2 + ia3) / 3;
+      const total = Math.round(iaAvg + assign + see);
       const grade = String(s?.grade ?? s?.result ?? s?.letterGrade ?? "").toUpperCase();
       return {
         subjectName: s?.subject_name ?? s?.Course_Name ?? s?.name ?? s?.subjectName ?? s?.title ?? "",
-        totalMarks: isNaN(total) ? 0 : total,
-        grade: grade || undefined,
+        IA1: ia1 || undefined,
+        IA2: ia2 || undefined,
+        IA3: ia3 || undefined,
+        assignment_marks: assign || undefined,
+        SEE_marks: see || undefined,
+        totalMarks: total,
+        grade: grade || calculateGrade(total),
       };
     });
     return { semester, records };
@@ -95,7 +122,11 @@ export default function PerformancePage() {
   }, [usn, token, selectedSemester]);
 
   const flatRecords = useMemo(() => {
-    return data.flatMap((d) => d.records.map((r) => ({ ...r, semester: d.semester })));
+    return data.flatMap((d) => d.records.map((r) => ({ 
+      ...r, 
+      semester: d.semester,
+      grade: calculateGrade(r.totalMarks ?? 0)
+    })));
   }, [data]);
 
   return (
@@ -171,14 +202,19 @@ export default function PerformancePage() {
                         <TableRow>
                           <TableHead>Semester</TableHead>
                           <TableHead>Subject Name</TableHead>
-                          <TableHead className="text-right">Total Marks</TableHead>
+                          <TableHead className="text-center">IA1</TableHead>
+                          <TableHead className="text-center">IA2</TableHead>
+                          <TableHead className="text-center">IA3</TableHead>
+                          <TableHead className="text-center">Assign</TableHead>
+                          <TableHead className="text-center">SEE</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
                           <TableHead className="text-right">Grade</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {flatRecords.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            <TableCell colSpan={9} className="text-center text-muted-foreground">
                               No performance records found.
                             </TableCell>
                           </TableRow>
@@ -187,8 +223,20 @@ export default function PerformancePage() {
                             <TableRow key={`${r.subjectName}-${idx}`}>
                               <TableCell>{String(r.semester ?? "")}</TableCell>
                               <TableCell>{r.subjectName ?? ""}</TableCell>
+                              <TableCell className="text-center">{r.IA1 ?? "-"}</TableCell>
+                              <TableCell className="text-center">{r.IA2 ?? "-"}</TableCell>
+                              <TableCell className="text-center">{r.IA3 ?? "-"}</TableCell>
+                              <TableCell className="text-center">{r.assignment_marks ?? "-"}</TableCell>
+                              <TableCell className="text-center">{r.SEE_marks ?? "-"}</TableCell>
                               <TableCell className="text-right">{isNaN(r.totalMarks as number) ? "0" : String(r.totalMarks ?? 0)}</TableCell>
-                              <TableCell className="text-right">{r.grade ?? "-"}</TableCell>
+                              <TableCell className="text-right">
+                                <span className={`font-medium ${
+                                  r.grade === "F" ? "text-red-600" : 
+                                  r.grade === "O" ? "text-green-600" : ""
+                                }`}>
+                                  {r.grade ?? "-"}
+                                </span>
+                              </TableCell>
                             </TableRow>
                           ))
                         )}

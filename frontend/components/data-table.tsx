@@ -32,19 +32,36 @@ export function DataTable(props: DataTableProps) {
         <TableCaption>Subjects and marks for the current semester</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[200px]">Subject</TableHead>
-            <TableHead className="w-[120px]">Marks</TableHead>
-            <TableHead className="w-[160px]">Classes Attended</TableHead>
-            <TableHead className="w-[160px]">Classes Conducted</TableHead>
+            <TableHead className="w-[160px]">Subject</TableHead>
+            <TableHead className="w-[60px] text-center">IA1</TableHead>
+            <TableHead className="w-[60px] text-center">IA2</TableHead>
+            <TableHead className="w-[60px] text-center">IA3</TableHead>
+            <TableHead className="w-[80px] text-center">Assignment</TableHead>
+            <TableHead className="w-[60px] text-center">SEE</TableHead>
+            <TableHead className="w-[80px] text-center">Total</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {gradesData.map((row, idx) => (
             <TableRow key={`${row.subject_name || 'subject'}-${idx}`}>
               <TableCell className="font-medium">{row.subject_name}</TableCell>
-              <TableCell>{row.subject_marks}</TableCell>
-              <TableCell>{row.classes_attended}</TableCell>
-              <TableCell>{row.classes_conducted}</TableCell>
+              <TableCell className="text-center">{row.IA1 ?? row.ia1 ?? "-"}</TableCell>
+              <TableCell className="text-center">{row.IA2 ?? row.ia2 ?? "-"}</TableCell>
+              <TableCell className="text-center">{row.IA3 ?? row.ia3 ?? "-"}</TableCell>
+              <TableCell className="text-center">{row.assignment_marks ?? "-"}</TableCell>
+              <TableCell className="text-center">{row.SEE_marks ?? row.see ?? "-"}</TableCell>
+              <TableCell className="text-center">
+                {(() => {
+                  const ia1 = Number(row.IA1 ?? row.ia1 ?? 0);
+                  const ia2 = Number(row.IA2 ?? row.ia2 ?? 0);
+                  const ia3 = Number(row.IA3 ?? row.ia3 ?? 0);
+                  const assign = Number(row.assignment_marks ?? 0);
+                  const see = Number(row.SEE_marks ?? row.see ?? 0);
+                  const iaAvg = (ia1 + ia2 + ia3) / 3;
+                  const total = Math.round(iaAvg + assign + see);
+                  return total || "-";
+                })()}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

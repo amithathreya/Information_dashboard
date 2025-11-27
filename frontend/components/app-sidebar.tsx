@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import {
   IconCamera,
   IconChartBar,
@@ -105,6 +106,7 @@ export function AppSidebar({ studentName, showUser = true, ...props }: AppSideba
 
   // Client-side user name from localStorage (avoids hardcoding)
   const [userName, setUserName] = useState<string>(studentName || "")
+  const pathname = usePathname()
   
   // Effect to update from prop when it changes
   useEffect(() => {
@@ -144,12 +146,12 @@ export function AppSidebar({ studentName, showUser = true, ...props }: AppSideba
   }, [])
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="offcanvas" className="!bg-slate-600" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="px-2 py-3">
-              <h1 className="text-lg font-bold text-sidebar-foreground uppercase">Global Academy of Technology</h1>
+              <h1 className="text-lg font-bold text-white uppercase">Global Academy of Technology</h1>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -160,17 +162,29 @@ export function AppSidebar({ studentName, showUser = true, ...props }: AppSideba
         <div className="px-3 mt-4">
           <div className="grid gap-2">
             <a href="/dashboard/personal" className="block w-full">
-              <button className="w-full rounded-md bg-sidebar-accent hover:bg-sidebar-accent/80 px-3 py-2 text-sm text-sidebar-accent-foreground text-left transition-colors">
+              <button className={`w-full rounded-md px-3 py-2 text-sm text-left transition-colors ${
+                pathname === "/dashboard/personal"
+                  ? "bg-amber-500 text-white"
+                  : "bg-slate-500 hover:bg-slate-400 text-white"
+              }`}>
                 Personal Details
               </button>
             </a>
             <a href="/dashboard/attendance" className="block w-full">
-              <button className="w-full rounded-md bg-sidebar-accent hover:bg-sidebar-accent/80 px-3 py-2 text-sm text-sidebar-accent-foreground text-left transition-colors">
+              <button className={`w-full rounded-md px-3 py-2 text-sm text-left transition-colors ${
+                pathname === "/dashboard/attendance"
+                  ? "bg-amber-500 text-white"
+                  : "bg-slate-500 hover:bg-slate-400 text-white"
+              }`}>
                 Attendance
               </button>
             </a>
             <a href="/dashboard/performance" className="block w-full">
-              <button className="w-full rounded-md bg-sidebar-accent hover:bg-sidebar-accent/80 px-3 py-2 text-sm text-sidebar-accent-foreground text-left transition-colors">
+              <button className={`w-full rounded-md px-3 py-2 text-sm text-left transition-colors ${
+                pathname === "/dashboard/performance"
+                  ? "bg-amber-500 text-white"
+                  : "bg-slate-500 hover:bg-slate-400 text-white"
+              }`}>
                 Previous Performance
               </button>
             </a>

@@ -172,7 +172,7 @@ export default function AttendancePage() {
               )}
 
               {!loading && !error && (
-                <Card className="!bg-sky-100 border border-sky-300">
+                <Card className="!bg-amber-100 border border-amber-300">
                   <CardHeader>
                     <CardTitle>
                       {selectedSemester === "all" ? "Attendance Across Semesters" : `Semester ${selectedSemester} Attendance`}

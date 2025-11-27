@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AdminStudentSidebar } from "@/components/admin/admin-student-sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pencil, Save, X, Loader2 } from "lucide-react";
+import { Pencil, Save, X, Loader2, Download } from "lucide-react";
 
 // Store complete subject data to avoid losing fields on save
 interface FullSubjectRecord {
@@ -55,6 +55,27 @@ export default function AdminAttendancePage() {
   const token = typeof window !== "undefined" 
     ? (localStorage.getItem("adminToken") || localStorage.getItem("token") || localStorage.getItem("jwt"))
     : null;
+
+  // Fetch student name from admin endpoint
+  async function fetchStudentName() {
+    if (!usn) return;
+    try {
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`http://localhost:8080/admin/students?semester=${selectedSemester}`, { headers });
+      if (!res.ok) return;
+      const json = await res.json();
+      const students = Array.isArray(json) ? json : (json?.students || []);
+      const student = students.find((st: any) => 
+        (st.usn || st.USN || "").toLowerCase() === usn.toLowerCase()
+      );
+      if (student) {
+        setStudentName(student.name || student.Name || "");
+      }
+    } catch (e) {
+      
+    }
+  }
 
   async function fetchData() {
     if (!usn) return;
@@ -107,7 +128,10 @@ export default function AdminAttendancePage() {
   }
 
   useEffect(() => {
-    if (usn) fetchData();
+    if (usn) {
+      fetchStudentName();
+      fetchData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usn, token, selectedSemester]);
 
@@ -361,6 +385,35 @@ export default function AdminAttendancePage() {
                         )}
                       </TableBody>
                     </Table>
+                    
+                    <div className="mt-4 flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          const studentInfo = `Student Name,${studentName || "N/A"}\nUSN,${usn.toUpperCase()}\nSemester,${selectedSemester}\n\n`;
+                          const csvHeader = "Subject Name,Classes Attended,Classes Conducted,Attendance %\n";
+                          const csvRows = displayRecords.map(r => 
+                            `"${r.subjectName}",${r.attended},${r.total},${r.percentage}`
+                          ).join("\n");
+                          const csvContent = studentInfo + csvHeader + csvRows;
+                          const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `${usn}_semester${selectedSemester}_attendance.csv`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          URL.revokeObjectURL(url);
+                        }}
+                        disabled={displayRecords.length === 0}
+                      >
+                        <Download className="h-4 w-4" />
+                        Download CSV
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}

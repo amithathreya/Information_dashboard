@@ -12,12 +12,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AdminStudentSidebar } from "@/components/admin/admin-student-sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pencil, Save, X, Loader2 } from "lucide-react";
+import { Pencil, Save, X, Loader2, Download } from "lucide-react";
 
 // Store complete subject data to avoid losing fields on save
 interface FullSubjectRecord {
   _id?: string;
   subject_name: string;
+  IA1: number;
+  IA2: number;
+  IA3: number;
+  assignment_marks: number;
+  SEE_marks: number;
   subject_marks: number;
   grade: string;
   classes_attended: number;
@@ -27,8 +32,24 @@ interface FullSubjectRecord {
 
 interface PerformanceRecord {
   subjectName: string;
+  IA1: number;
+  IA2: number;
+  IA3: number;
+  assignment_marks: number;
+  SEE_marks: number;
   totalMarks: number;
   grade: string;
+}
+
+// Auto-calculate grade based on marks
+function calculateGrade(marks: number): string {
+  if (marks >= 90) return "O";
+  if (marks >= 80) return "A+";
+  if (marks >= 70) return "A";
+  if (marks >= 60) return "B+";
+  if (marks >= 50) return "B";
+  if (marks >= 40) return "C";
+  return "F";
 }
 
 export default function AdminPerformancePage() {
@@ -54,16 +75,41 @@ export default function AdminPerformancePage() {
     ? (localStorage.getItem("adminToken") || localStorage.getItem("token") || localStorage.getItem("jwt"))
     : null;
 
+  // Fetch student name from admin endpoint
+  async function fetchStudentName() {
+    if (!usn) return;
+    try {
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`http://localhost:8080/admin/students?semester=${selectedSemester}`, { headers });
+      if (!res.ok) return;
+      const json = await res.json();
+      const students = Array.isArray(json) ? json : (json?.students || []);
+      const student = students.find((st: any) => 
+        (st.usn || st.USN || "").toLowerCase() === usn.toLowerCase()
+      );
+      if (student) {
+        setStudentName(student.name || student.Name || "");
+      }
+    } catch (e) {
+      // Ignore errors for student name fetch
+    }
+  }
+
   async function fetchData() {
     if (!usn) return;
     setLoading(true);
     setError("");
     
     try {
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = {
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+      };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      const url = `http://localhost:8080/users/getsemesterdata/${encodeURIComponent(usn)}?semester=${selectedSemester}`;
-      const res = await fetch(url, { headers });
+      // Add timestamp to bust cache
+      const url = `http://localhost:8080/users/getsemesterdata/${encodeURIComponent(usn)}?semester=${selectedSemester}&_t=${Date.now()}`;
+      const res = await fetch(url, { headers, cache: "no-store" });
       
       if (!res.ok) {
         const msg = res.status === 401 ? "Unauthorized (401)" : res.status === 403 ? "Forbidden (403)" : `Error ${res.status}`;
@@ -83,19 +129,52 @@ export default function AdminPerformancePage() {
         (Array.isArray(json?.subjects) && json.subjects) ||
         [];
 
+      // Debug: log raw data from API
+      console.log("Raw API data:", JSON.stringify(rawArray, null, 2));
+
       // Store COMPLETE subject data including attendance fields
-      const fullRecords: FullSubjectRecord[] = rawArray.map((s: any) => ({
-        _id: s?._id,
-        subject_name: s?.subject_name ?? s?.Course_Name ?? s?.name ?? "",
-        subject_marks: Number(s?.subject_marks ?? s?.marks ?? 0) || 0,
-        grade: String(s?.grade ?? s?.result ?? "").toUpperCase(),
-        classes_attended: Number(s?.classes_attended ?? 0) || 0,
-        classes_conducted: Number(s?.classes_conducted ?? 0) || 0,
-        attendance: Number(s?.attendance ?? 0) || 0,
-      }));
+      const fullRecords: FullSubjectRecord[] = rawArray.map((s: any) => {
+        const ia1 = Number(s?.IA1 ?? s?.ia1 ?? 0) || 0;
+        const ia2 = Number(s?.IA2 ?? s?.ia2 ?? 0) || 0;
+        const ia3 = Number(s?.IA3 ?? s?.ia3 ?? 0) || 0;
+        const assign = Number(s?.assignment_marks ?? 0) || 0;
+        const see = Number(s?.SEE_marks ?? s?.see ?? 0) || 0;
+        const iaAvg = (ia1 + ia2 + ia3) / 3;
+        const total = Math.round(iaAvg + assign + see);
+        return {
+          _id: s?._id,
+          subject_name: String(s?.subject_name ?? s?.Course_Name ?? s?.name ?? ""),
+          IA1: ia1,
+          IA2: ia2,
+          IA3: ia3,
+          assignment_marks: assign,
+          SEE_marks: see,
+          subject_marks: total,
+          grade: String(s?.grade ?? s?.result ?? "").toUpperCase() || calculateGrade(total),
+          classes_attended: Number(s?.classes_attended ?? 0) || 0,
+          classes_conducted: Number(s?.classes_conducted ?? 0) || 0,
+          attendance: Number(s?.attendance ?? 0) || 0,
+        };
+      });
       
-      setRawSubjects(fullRecords);
-      setEditedSubjects(fullRecords);
+      // Debug: log processed data
+      console.log("Processed records:", JSON.stringify(fullRecords, null, 2));
+      
+      // Deduplicate by subject_name - keep first occurrence of each subject
+      const seen = new Set<string>();
+      const uniqueRecords = fullRecords.filter((record) => {
+        if (seen.has(record.subject_name)) {
+          console.log(`Skipping duplicate subject: ${record.subject_name}`);
+          return false;
+        }
+        seen.add(record.subject_name);
+        return true;
+      });
+      
+      console.log("Unique records after deduplication:", JSON.stringify(uniqueRecords, null, 2));
+      
+      setRawSubjects(uniqueRecords);
+      setEditedSubjects(uniqueRecords);
     } catch (e: any) {
       setError(e?.message || "Failed to fetch performance");
       setRawSubjects([]);
@@ -105,18 +184,30 @@ export default function AdminPerformancePage() {
   }
 
   useEffect(() => {
-    if (usn) fetchData();
+    if (usn) {
+      fetchStudentName();
+      fetchData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usn, token, selectedSemester]);
 
-  // Display records derived from raw/edited subjects
+  // Display records derived from raw/edited subjects with auto-calculated grade
   const displayRecords: PerformanceRecord[] = useMemo(() => {
     const source = isEditing ? editedSubjects : rawSubjects;
-    return source.map((s) => ({
-      subjectName: s.subject_name,
-      totalMarks: s.subject_marks,
-      grade: s.grade,
-    }));
+    return source.map((s) => {
+      const iaAvg = (s.IA1 + s.IA2 + s.IA3) / 3;
+      const total = Math.round(iaAvg + s.assignment_marks + s.SEE_marks);
+      return {
+        subjectName: s.subject_name,
+        IA1: s.IA1,
+        IA2: s.IA2,
+        IA3: s.IA3,
+        assignment_marks: s.assignment_marks,
+        SEE_marks: s.SEE_marks,
+        totalMarks: total,
+        grade: calculateGrade(total),
+      };
+    });
   }, [rawSubjects, editedSubjects, isEditing]);
 
   const handleEdit = () => {
@@ -130,13 +221,18 @@ export default function AdminPerformancePage() {
     setEditedSubjects(rawSubjects);
   };
 
-  const handleInputChange = (index: number, field: "subject_marks" | "grade", value: string) => {
+  const handleInputChange = (index: number, field: "IA1" | "IA2" | "IA3" | "assignment_marks" | "SEE_marks", value: string) => {
     const newData = [...editedSubjects];
-    if (field === "subject_marks") {
-      newData[index] = { ...newData[index], subject_marks: parseInt(value) || 0 };
-    } else {
-      newData[index] = { ...newData[index], grade: value.toUpperCase() };
-    }
+    const numValue = parseInt(value) || 0;
+    newData[index] = { 
+      ...newData[index], 
+      [field]: numValue,
+    };
+    // Auto-calculate total: (IA1+IA2+IA3)/3 + assignment_marks + SEE_marks
+    const iaAvg = (newData[index].IA1 + newData[index].IA2 + newData[index].IA3) / 3;
+    const totalMarks = Math.round(iaAvg + newData[index].assignment_marks + newData[index].SEE_marks);
+    newData[index].subject_marks = totalMarks;
+    newData[index].grade = calculateGrade(totalMarks);
     setEditedSubjects(newData);
   };
 
@@ -146,32 +242,50 @@ export default function AdminPerformancePage() {
     setError("");
     
     try {
-      // Send COMPLETE subject data including attendance fields
-      const subjects = editedSubjects.map((record) => ({
-        subject_name: record.subject_name,
-        subject_marks: record.subject_marks,
-        grade: record.grade,
-        classes_attended: record.classes_attended,
-        classes_conducted: record.classes_conducted,
-        attendance: record.attendance,
-      }));
-
-      const res = await fetch(
-        `http://localhost:8080/admin/updateSemesterSubjects/${encodeURIComponent(usn)}?semester=${selectedSemester}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-          body: JSON.stringify({ subjects }),
+      // Update each subject individually using document _id for precise updates
+      // PATCH /admin/collection/semester_<n>/<_id>
+      const updatePromises = editedSubjects.map(async (record) => {
+        const body = {
+          subject_name: record.subject_name,
+          IA1: record.IA1,
+          IA2: record.IA2,
+          IA3: record.IA3,
+          assignment_marks: record.assignment_marks,
+          SEE_marks: record.SEE_marks,
+          subject_marks: record.subject_marks,
+          grade: record.grade,
+          classes_attended: record.classes_attended,
+          classes_conducted: record.classes_conducted,
+          attendance: record.attendance,
+        };
+        
+        // Use _id for precise document update
+        const documentId = record._id;
+        console.log(`Updating ${record.subject_name} (id: ${documentId}):`, body);
+        
+        const res = await fetch(
+          `http://localhost:8080/admin/collection/semester_${selectedSemester}/${encodeURIComponent(documentId)}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+            body: JSON.stringify(body),
+          }
+        );
+        
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Failed to save ${record.subject_name} (${res.status})`);
         }
-      );
-      
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || `Failed to save (${res.status})`);
-      }
+        
+        const responseData = await res.json().catch(() => ({}));
+        console.log(`Save response for ${record.subject_name}:`, responseData);
+        return responseData;
+      });
+
+      await Promise.all(updatePromises);
       
       setRawSubjects(editedSubjects);
       setIsEditing(false);
@@ -301,14 +415,19 @@ export default function AdminPerformancePage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Subject Name</TableHead>
-                          <TableHead className="text-right w-28">Marks</TableHead>
-                          <TableHead className="text-right w-24">Grade</TableHead>
+                          <TableHead className="text-center w-16">IA1</TableHead>
+                          <TableHead className="text-center w-16">IA2</TableHead>
+                          <TableHead className="text-center w-16">IA3</TableHead>
+                          <TableHead className="text-center w-20">Assign</TableHead>
+                          <TableHead className="text-center w-16">SEE</TableHead>
+                          <TableHead className="text-center w-20">Total</TableHead>
+                          <TableHead className="text-center w-20">Grade</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {displayRecords.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={3} className="text-center text-muted-foreground">
+                            <TableCell colSpan={8} className="text-center text-muted-foreground">
                               No performance records found.
                             </TableCell>
                           </TableRow>
@@ -316,39 +435,122 @@ export default function AdminPerformancePage() {
                           displayRecords.map((r, idx) => (
                             <TableRow key={`${r.subjectName}-${idx}`}>
                               <TableCell>{r.subjectName ?? ""}</TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-center">
                                 {isEditing ? (
                                   <Input
                                     type="number"
-                                    value={editedSubjects[idx]?.subject_marks ?? 0}
-                                    onChange={(e) => handleInputChange(idx, "subject_marks", e.target.value)}
-                                    className="w-20 text-right ml-auto"
+                                    value={editedSubjects[idx]?.IA1 ?? 0}
+                                    onChange={(e) => handleInputChange(idx, "IA1", e.target.value)}
+                                    className="w-14 text-center"
+                                    min={0}
+                                    max={50}
+                                  />
+                                ) : (
+                                  r.IA1 || "-"
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {isEditing ? (
+                                  <Input
+                                    type="number"
+                                    value={editedSubjects[idx]?.IA2 ?? 0}
+                                    onChange={(e) => handleInputChange(idx, "IA2", e.target.value)}
+                                    className="w-14 text-center"
+                                    min={0}
+                                    max={50}
+                                  />
+                                ) : (
+                                  r.IA2 || "-"
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {isEditing ? (
+                                  <Input
+                                    type="number"
+                                    value={editedSubjects[idx]?.IA3 ?? 0}
+                                    onChange={(e) => handleInputChange(idx, "IA3", e.target.value)}
+                                    className="w-14 text-center"
+                                    min={0}
+                                    max={50}
+                                  />
+                                ) : (
+                                  r.IA3 || "-"
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {isEditing ? (
+                                  <Input
+                                    type="number"
+                                    value={editedSubjects[idx]?.assignment_marks ?? 0}
+                                    onChange={(e) => handleInputChange(idx, "assignment_marks", e.target.value)}
+                                    className="w-14 text-center"
+                                    min={0}
+                                    max={50}
+                                  />
+                                ) : (
+                                  r.assignment_marks || "-"
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {isEditing ? (
+                                  <Input
+                                    type="number"
+                                    value={editedSubjects[idx]?.SEE_marks ?? 0}
+                                    onChange={(e) => handleInputChange(idx, "SEE_marks", e.target.value)}
+                                    className="w-14 text-center"
                                     min={0}
                                     max={100}
                                   />
                                 ) : (
-                                  String(r.totalMarks ?? 0)
+                                  r.SEE_marks || "-"
                                 )}
                               </TableCell>
-                              <TableCell className="text-right">
-                                {isEditing ? (
-                                  <Input
-                                    type="text"
-                                    value={editedSubjects[idx]?.grade ?? ""}
-                                    onChange={(e) => handleInputChange(idx, "grade", e.target.value)}
-                                    className="w-16 text-center ml-auto uppercase"
-                                    maxLength={2}
-                                    placeholder="A+"
-                                  />
-                                ) : (
-                                  r.grade || "-"
-                                )}
+                              <TableCell className="text-center font-medium">
+                                {r.totalMarks ?? 0}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <span className={`font-medium ${
+                                  r.grade === "F" ? "text-red-600" : 
+                                  r.grade === "O" ? "text-green-600" : ""
+                                }`}>
+                                  {r.grade || "-"}
+                                </span>
                               </TableCell>
                             </TableRow>
                           ))
                         )}
                       </TableBody>
                     </Table>
+                    
+                    {/* Download Button */}
+                    <div className="mt-4 flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          const studentInfo = `Student Name,${studentName || "N/A"}\nUSN,${usn.toUpperCase()}\nSemester,${selectedSemester}\n\n`;
+                          const csvHeader = "Subject Name,IA1,IA2,IA3,Assignment,SEE,Total,Grade\n";
+                          const csvRows = displayRecords.map(r => 
+                            `"${r.subjectName}",${r.IA1 || 0},${r.IA2 || 0},${r.IA3 || 0},${r.assignment_marks || 0},${r.SEE_marks || 0},${r.totalMarks},"${r.grade}"`
+                          ).join("\n");
+                          const csvContent = studentInfo + csvHeader + csvRows;
+                          const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `${usn}_semester${selectedSemester}_performance.csv`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          URL.revokeObjectURL(url);
+                        }}
+                        disabled={displayRecords.length === 0}
+                      >
+                        <Download className="h-4 w-4" />
+                        Download CSV
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}

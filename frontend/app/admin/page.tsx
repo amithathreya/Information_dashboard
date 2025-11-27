@@ -88,6 +88,7 @@ export default function AdminPage() {
               address: personalRaw.address || personalRaw.Address || personalRaw.addr || undefined,
               phone_number: personalRaw.phone_number || personalRaw.phone || personalRaw.mobile || personalRaw.Phone || undefined,
               mentor_name: personalRaw.mentor_name || personalRaw.mentor || personalRaw.mentorName || undefined,
+              email: personalRaw.email || personalRaw.Email || personalRaw.emailId || (st as any).email || undefined,
             }
           : undefined
 
