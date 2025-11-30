@@ -80,39 +80,29 @@ export const getUserAcademic = async (USN, opts = {}) => {
   return await Model.findOne(filter);
 };
 
-/**
- * Aggregate records for a USN across semesters from upper down to lower (inclusive).
- * Searches collections named `semester_<n>` for each semester in range and accumulates records.
- * @param {string} USN
- * @param {number} upperSemester
- * @param {number} lowerSemester
- * @returns {Promise<Array>} array of records found across semesters
- */
 export const getUserSemesterData = async (USN, upperSemester, lowerSemester) => {
   const results = [];
   for (let s = upperSemester; s >= lowerSemester; s--) {
     const model = getRecordModel({ semester: s });
-    // getRecordModel may return a model or a Promise; handle either
+
     const Model = (typeof model.then === 'function') ? await model : model;
     try {
-      // use lean() so we get plain JSON objects that can be forwarded as-is
+
   const filter = buildUsnFilter(USN);
   const docs = await Model.find(filter).lean();
       if (docs && docs.length) {
-        // append raw documents directly so the frontend receives the exact stored JSON
         results.push(...docs);
       }
     } catch (err) {
-      // ignore missing collection errors and continue
+
     }
   }
   return results;
 };
 
-// Fetch only personal details for a given USN from personal_information
+
 export const getUserPersonalDetails = async (USN) => {
   if (!USN) return null;
-  // Match case-insensitively on USN/usn
   const trimmed = String(USN).trim();
   const esc = escapeRegex(trimmed);
   const filter = {
@@ -123,6 +113,5 @@ export const getUserPersonalDetails = async (USN) => {
       { usn: { $regex: `^${esc}$`, $options: 'i' } }
     ]
   };
-  // Return single doc
   return await PersonalInfo.findOne(filter).lean();
 };

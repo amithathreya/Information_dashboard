@@ -23,17 +23,7 @@ const defaultCollectionName = 'semester_8';
 const DefaultModelName = `Record__${defaultCollectionName}`;
 const DefaultRecord = mongoose.models[DefaultModelName] || mongoose.model(DefaultModelName, recordSchema, defaultCollectionName);
 
-/**
- * Get a Record model for a specific collection.
- * If neither semester nor collectionName is provided, returns the model bound to `semester_8`.
- * If collectionName is provided, returns/creates a model bound to that collection.
- * If semester is provided, builds a candidate collection name like `semester_${semester}` and uses it.
- *
- * @param {Object} opts
- * @param {string|number} [opts.semester]
- * @param {string} [opts.collectionName]
- * @returns {mongoose.Model}
- */
+
 export function getRecordModel({ semester, collectionName } = {}) {
   if (collectionName) {
     const modelName = `Record__${collectionName}`;

@@ -1,5 +1,4 @@
 import { listStudents, listRawRecords, updateSemesterSubjects, countDocs, loginAdmin, registerAdmin, updateCollectionRecord, updatePersonalInfo } from '../services/admin.service.js';
-import { getRecordModel } from '../models/record.model.js';
 import { signToken } from '../utils/jwt.js';
 
 export async function getStudents(req, res) {
@@ -72,33 +71,6 @@ export async function adminRegister(req, res) {
   }
 }
 
-/**
- * PATCH /admin/collection/:collection/:identifier
- * Generic update for semester_1..8 or personal_information.
- * Body: JSON object with fields to update.
- */
-export async function patchCollectionRecord(req, res) {
-  try {
-    const { collection, identifier } = req.params;
-    const updates = req.body;
-    if (!collection) return res.status(400).json({ message: 'collection is required' });
-    if (!identifier) return res.status(400).json({ message: 'identifier (USN or _id) is required' });
-    if (!updates || Object.keys(updates).length === 0) return res.status(400).json({ message: 'updates body is required' });
-
-    const doc = await updateCollectionRecord(collection, identifier, updates);
-    return res.status(200).json({ message: 'Updated successfully', data: doc });
-  } catch (err) {
-    console.error('patchCollectionRecord error:', err);
-    const status = err.message === 'Document not found' ? 404 : 500;
-    return res.status(status).json({ message: err.message || 'Error updating record' });
-  }
-}
-
-/**
- * PATCH /admin/personal/:USN
- * Convenience endpoint for personal_information updates.
- * Body: JSON object with fields to update.
- */
 export async function patchPersonalInfo(req, res) {
   try {
     const { USN } = req.params;
