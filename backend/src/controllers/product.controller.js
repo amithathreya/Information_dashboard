@@ -8,6 +8,9 @@ export const getProducts = async (req, res) => {
     const productData = await Promise.resolve(products);
     res.status(200).json(productData);
   } catch (err) {
-    res.status(500).json({ message: 'Error fetching products', error: err.message });
+    const message = process.env.NODE_ENV === 'production' 
+      ? 'Error fetching products' 
+      : err.message;
+    res.status(500).json({ message });
   }
 };

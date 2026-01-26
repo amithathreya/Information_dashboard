@@ -108,7 +108,7 @@ This document outlines the performance and efficiency improvements made to the I
   - Prevents brute force attacks
 
 **Dependencies Added:**
-- `express-rate-limit@^7.4.1`
+- `express-rate-limit@^8.2.1`
 
 **Impact:**
 - **Before:** Unlimited authentication attempts; vulnerable to brute force

@@ -3,6 +3,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import routes from './routes/index.js';
 import { apiLimiter } from './middlewares/rateLimiter.middleware.js';
+import { errorHandler } from './middlewares/error.middleware.js';
 
 const app = express();
 
@@ -25,5 +26,8 @@ app.use(cors(corsOptions));
 app.use(apiLimiter);
 
 app.use('/', routes);
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 export default app;

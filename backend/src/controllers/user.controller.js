@@ -15,7 +15,9 @@ export const getUsers = async (req, res) => {
       .limit(limit)
       .lean(); // Use lean() for better performance when not modifying documents
 
-    const total = await User.countDocuments();
+    // Use estimatedDocumentCount() for better performance - it's much faster than countDocuments()
+    // as it uses collection metadata instead of scanning documents
+    const total = await User.estimatedDocumentCount();
 
     res.status(200).json({
       users,
@@ -28,7 +30,10 @@ export const getUsers = async (req, res) => {
     });
   } catch (err) {
     logger.error(`Error fetching users: ${err.message}`);
-    res.status(500).json({ message: 'Error fetching users', error: err.message });
+    const message = process.env.NODE_ENV === 'production' 
+      ? 'Error fetching users' 
+      : err.message;
+    res.status(500).json({ message });
   }
 };
 
@@ -58,7 +63,10 @@ export const login = async (req, res) => {
     }
   } catch (err) {
     logger.error(`Error during login for user ${username}: ${err.message}`);
-    res.status(500).json({ message: 'Error during login', error: err.message });
+    const message = process.env.NODE_ENV === 'production' 
+      ? 'Error during login' 
+      : err.message;
+    res.status(500).json({ message });
   }
 };
 
@@ -97,6 +105,9 @@ export const register = async (req, res) => {
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
     logger.error(`Error registering user ${username}: ${err.message}`);
-    res.status(500).json({ message: 'Error registering user', error: err.message });
+    const message = process.env.NODE_ENV === 'production' 
+      ? 'Error registering user' 
+      : err.message;
+    res.status(500).json({ message });
   }
 };
